@@ -452,8 +452,8 @@ function DetailPromptEditor({ promptBody }) {
 
 }
 
-function DetailPage({ id }) {
-  const [isImproveOpen, setIsImproveOpen] = React.useState(false);
+function DetailPage({ id, showImprove }) {
+  const [isImproveOpen, setIsImproveOpen] = React.useState(Boolean(showImprove));
   const [improveRequest, setImproveRequest] = React.useState(`The image_description field is too vague. Push the AI to include the
 object type, condition, and any visible text or markings. Also, can we
 add a confidence level field to the JSON output?`);
@@ -462,6 +462,16 @@ add a confidence level field to the JSON output?`);
   const accountLabel = account ? account.label : "All accounts";
   const customPromptBody = String(p.id).startsWith("custom_") || p.isFallback ? (p.promptBody || p.what) : p.promptBody;
   const isCustomPrompt = String(p.id).startsWith("custom_");
+  const detailPath = "/detail/" + p.id;
+  const closeImproveModal = () => {
+    setIsImproveOpen(false);
+    go(detailPath);
+  };
+
+  React.useEffect(() => {
+    setIsImproveOpen(Boolean(showImprove));
+  }, [showImprove, id]);
+
   if (isCustomPrompt || p.isFallback) {
     const body = customPromptBody || buildDefaultPromptBodyForCreateModal();
     return (
@@ -489,7 +499,7 @@ add a confidence level field to the JSON output?`);
           </span>
           <div className="det-bar-actions">
             <button type="button" className="btn btn--outline btn--pill"
-            onClick={() => setIsImproveOpen(true)}>
+            onClick={() => go("/improve/" + p.id)}>
               Improve Prompt with AI
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L8 4.5L11 5.5L8 6.5L7 9.5L6 6.5L3 5.5L6 4.5L7 1.5Z" fill="currentColor"/><path d="M11 9L11.5 10.5L13 11L11.5 11.5L11 13L10.5 11.5L9 11L10.5 10.5L11 9Z" fill="currentColor"/></svg>
             </button>
@@ -525,7 +535,7 @@ add a confidence level field to the JSON output?`);
             <div className="improve-head">
               <h2 id="improve-prompt-title" className="improve-title">Improve Prompt with AI</h2>
               <button type="button" className="improve-close" aria-label="Close"
-              onClick={() => setIsImproveOpen(false)}>
+              onClick={closeImproveModal}>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3.5 3.5L10.5 10.5M10.5 3.5L3.5 10.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
               </button>
             </div>
@@ -539,9 +549,9 @@ add a confidence level field to the JSON output?`);
             </div>
             <div className="improve-foot">
               <button type="button" className="btn btn--dark btn--bar"
-              onClick={() => setIsImproveOpen(false)}>Cancel</button>
+              onClick={closeImproveModal}>Cancel</button>
               <button type="button" className="btn btn--primary btn--bar"
-              onClick={() => setIsImproveOpen(false)}>Improve</button>
+              onClick={closeImproveModal}>Improve</button>
             </div>
           </div>
         </div>
@@ -945,6 +955,7 @@ function PromptApp() {
   if (route === "library") return <LibraryPage />;
   if (route === "request") return <RequestPromptPage />;
   if (route === "detail") return <DetailPage id={arg} />;
+  if (route === "improve") return <DetailPage id={arg} showImprove />;
   if (route === "builder") return <BuilderPage key={arg || "new"} id={arg} />;
   if (route === "compare") return <ComparePage id={arg} />;
   if (route === "sandbox") return <SandboxPage id={arg} />;
