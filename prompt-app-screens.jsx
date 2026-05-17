@@ -213,7 +213,7 @@ function RequestPromptPage() {
       promptBody,
       accountId
     });
-    go("/detail/" + id);
+    go("/created/" + id);
   };
 
   return (
@@ -452,7 +452,7 @@ function DetailPromptEditor({ promptBody }) {
 
 }
 
-function DetailPage({ id, showImprove }) {
+function DetailPage({ id, showImprove, showAction }) {
   const [isImproveOpen, setIsImproveOpen] = React.useState(Boolean(showImprove));
   const [improveRequest, setImproveRequest] = React.useState(`The image_description field is too vague. Push the AI to include the
 object type, condition, and any visible text or markings. Also, can we
@@ -462,7 +462,7 @@ add a confidence level field to the JSON output?`);
   const accountLabel = account ? account.label : "All accounts";
   const customPromptBody = String(p.id).startsWith("custom_") || p.isFallback ? (p.promptBody || p.what) : p.promptBody;
   const isCustomPrompt = String(p.id).startsWith("custom_");
-  const detailPath = "/detail/" + p.id;
+  const detailPath = showAction ? "/created/" + p.id : "/detail/" + p.id;
   const closeImproveModal = () => {
     setIsImproveOpen(false);
     go(detailPath);
@@ -472,7 +472,7 @@ add a confidence level field to the JSON output?`);
     setIsImproveOpen(Boolean(showImprove));
   }, [showImprove, id]);
 
-  if (isCustomPrompt || p.isFallback) {
+  if (showAction && (isCustomPrompt || p.isFallback)) {
     const body = customPromptBody || buildDefaultPromptBodyForCreateModal();
     return (
       <AppShell secondaryNav={<SecondaryNav current="library" />}>
@@ -810,7 +810,7 @@ function BuilderPage({ id }) {
       accountId
     });
     setSavedAt(now);
-    go("/detail/" + customPromptId);
+    go("/created/" + customPromptId);
   };
 
   return (
@@ -955,7 +955,8 @@ function PromptApp() {
   if (route === "library") return <LibraryPage />;
   if (route === "request") return <RequestPromptPage />;
   if (route === "detail") return <DetailPage id={arg} />;
-  if (route === "improve") return <DetailPage id={arg} showImprove />;
+  if (route === "created") return <DetailPage id={arg} showAction />;
+  if (route === "improve") return <DetailPage id={arg} showAction showImprove />;
   if (route === "builder") return <BuilderPage key={arg || "new"} id={arg} />;
   if (route === "compare") return <ComparePage id={arg} />;
   if (route === "sandbox") return <SandboxPage id={arg} />;
