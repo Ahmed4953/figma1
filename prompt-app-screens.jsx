@@ -453,6 +453,10 @@ function DetailPromptEditor({ promptBody }) {
 }
 
 function DetailPage({ id }) {
+  const [isImproveOpen, setIsImproveOpen] = React.useState(false);
+  const [improveRequest, setImproveRequest] = React.useState(`The image_description field is too vague. Push the AI to include the
+object type, condition, and any visible text or markings. Also, can we
+add a confidence level field to the JSON output?`);
   const p = findLibraryPrompt(id) || FALLBACK_PROMPT_DETAIL;
   const account = PROMPTS_BUILDER_ACCOUNTS.find((a) => a.id === p.accountId);
   const accountLabel = account ? account.label : "All accounts";
@@ -484,7 +488,8 @@ function DetailPage({ id }) {
             <span className="det-ver-dot"></span>
           </span>
           <div className="det-bar-actions">
-            <button type="button" className="btn btn--outline btn--pill">
+            <button type="button" className="btn btn--outline btn--pill"
+            onClick={() => setIsImproveOpen(true)}>
               Improve Prompt with AI
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L8 4.5L11 5.5L8 6.5L7 9.5L6 6.5L3 5.5L6 4.5L7 1.5Z" fill="currentColor"/><path d="M11 9L11.5 10.5L13 11L11.5 11.5L11 13L10.5 11.5L9 11L10.5 10.5L11 9Z" fill="currentColor"/></svg>
             </button>
@@ -513,6 +518,34 @@ function DetailPage({ id }) {
           <button type="button" className="btn btn--dark btn--bar" onClick={() => go("/library")}>Discard</button>
           <button type="button" className="btn btn--primary btn--bar">Push to Index</button>
         </div>
+
+        {isImproveOpen &&
+        <div className="improve-scrim">
+          <div className="improve-modal" role="dialog" aria-modal="true" aria-labelledby="improve-prompt-title">
+            <div className="improve-head">
+              <h2 id="improve-prompt-title" className="improve-title">Improve Prompt with AI</h2>
+              <button type="button" className="improve-close" aria-label="Close"
+              onClick={() => setIsImproveOpen(false)}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3.5 3.5L10.5 10.5M10.5 3.5L3.5 10.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+            <div className="improve-body">
+              <textarea
+              className="improve-textarea"
+              value={improveRequest}
+              onChange={(e) => setImproveRequest(e.target.value)}
+              placeholder="Describe how you'd like to improve this prompt..."
+              />
+            </div>
+            <div className="improve-foot">
+              <button type="button" className="btn btn--dark btn--bar"
+              onClick={() => setIsImproveOpen(false)}>Cancel</button>
+              <button type="button" className="btn btn--primary btn--bar"
+              onClick={() => setIsImproveOpen(false)}>Improve</button>
+            </div>
+          </div>
+        </div>
+        }
       </AppShell>);
   }
 
