@@ -42,6 +42,33 @@ const PROMPT_CATEGORIES = [
 { id: "grounding", label: "Grounding", tabLabel: "Grounding" },
 { id: "filters", label: "Filters", tabLabel: "Filters" }];
 
+const FALLBACK_PROMPT_DETAIL = {
+  id: "fallback-hybrid-search",
+  cat: "HYBRID SEARCH",
+  catKey: "hybrid",
+  title: "Hybrid Search",
+  desc: "Combines semantic embeddings with keyword retrieval to produce a balanced ranked list of products.",
+  ver: "v2.4",
+  date: "May 17, 2026",
+  accountId: "mechatech",
+  isFallback: true,
+  promptBody: `**TASK**: Combine semantic embeddings with keyword retrieval to produce a balanced ranked list of products.
+
+STEPS:
+1. Normalize the user query and detect language.
+2. Compute the dense vector representation of the query using the configured embedding model.
+3. Run a kNN search against the product index, retrieving the top 200 candidates by cosine similarity.
+4. In parallel, run a BM25 keyword search over the same index using the original query.
+5. Merge candidate sets using reciprocal-rank fusion with weights alpha=0.6 and beta=0.4.
+6. Apply the configured smart filters before final ranking.
+7. Return the top N hits as a JSON array with id, score and matched fields.
+
+CONSTRAINTS:
+- The response must be valid JSON.
+- Scores must be normalized to the [0, 1] interval.
+- Never include products that fail the smart-filter step.`
+};
+
 function loadCustomPrompts() {
   try { return JSON.parse(localStorage.getItem(CUSTOM_PROMPTS_KEY)) || []; }
   catch { return []; }
@@ -419,13 +446,12 @@ function DetailPromptEditor({ promptBody }) {
 }
 
 function DetailPage({ id }) {
-  const p = findLibraryPrompt(id);
-  if (!p) return <NotFound back="/library" />;
+  const p = findLibraryPrompt(id) || FALLBACK_PROMPT_DETAIL;
   const account = PROMPTS_BUILDER_ACCOUNTS.find((a) => a.id === p.accountId);
   const accountLabel = account ? account.label : "All accounts";
-  const customPromptBody = String(p.id).startsWith("custom_") ? (p.promptBody || p.what) : p.promptBody;
+  const customPromptBody = String(p.id).startsWith("custom_") || p.isFallback ? (p.promptBody || p.what) : p.promptBody;
   const isCustomPrompt = String(p.id).startsWith("custom_");
-  if (isCustomPrompt) {
+  if (isCustomPrompt || p.isFallback) {
     const body = customPromptBody || buildDefaultPromptBodyForCreateModal();
     return (
       <AppShell secondaryNav={<SecondaryNav current="library" />}>
