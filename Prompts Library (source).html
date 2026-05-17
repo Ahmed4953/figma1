@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Prompts Library · nyris Portal</title>
+  <meta name="viewport" content="width=1440" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Fira+Sans:wght@600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg-page: rgb(221, 222, 231);
+      --card: rgb(255, 255, 255);
+      --card-inner: rgb(243, 243, 245);
+      --chip-bg: rgb(243, 244, 248);
+      --chip-border: rgb(231, 232, 241);
+      --text-1: rgb(30, 31, 49);
+      --text-2: rgb(43, 44, 70);
+      --text-3: rgb(59, 62, 95);
+      --text-muted: rgb(111, 112, 128);
+      --divider: rgb(231, 232, 241);
+      --purple: rgb(113, 20, 230);
+      --purple-mid: rgb(151, 69, 255);
+      --purple-50: rgb(242, 232, 255);
+      --purple-100: rgb(229, 208, 255);
+      --header-dark: rgb(30, 31, 49);
+      --shadow-card: 0 1px 2px rgba(30, 31, 49, 0.04), 0 6px 18px rgba(30, 31, 49, 0.06);
+      --shadow-card-hover: 0 2px 4px rgba(30, 31, 49, 0.06), 0 12px 28px rgba(30, 31, 49, 0.10);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--text-2);
+      background: var(--bg-page);
+      -webkit-font-smoothing: antialiased;
+    }
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* -------- Top Header -------- */
+    .header {
+      display: flex;
+      gap: 8px;
+      padding: 20px 20px 4px 20px;
+      align-items: center;
+    }
+    .header__menu {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: var(--header-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+    }
+    .header__menu svg { display: block; }
+    .header__bar {
+      flex: 1;
+      height: 56px;
+      border-radius: 16px;
+      background: var(--header-dark);
+      padding: 8px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header__left { display: flex; align-items: center; gap: 84px; }
+    .header__logo { height: 14px; width: auto; display: block; filter: brightness(0) invert(1); }
+    .header__search {
+      display: flex; align-items: center; gap: 8px;
+      background: #ffffff;
+      border-radius: 999px;
+      padding: 0 18px;
+      width: 360px;
+      height: 34px;
+      color: var(--text-2);
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+    }
+    .header__search .label { flex: 1; min-width: 0; color: var(--text-2); }
+    .header__search button {
+      background: transparent; border: 0; padding: 4px;
+      display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--text-3);
+      border-radius: 4px;
+    }
+    .header__search button:hover { background: rgba(59,62,95,0.06); }
+    .header__right {
+      display: flex; align-items: center; gap: 12px;
+      padding: 0 8px;
+    }
+    .header__email {
+      font-family: "Fira Sans", "Source Sans 3", sans-serif;
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.16px;
+      color: white;
+    }
+    .header__avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: rgb(43,44,70);
+      border: 1px solid rgba(255,255,255,0.08);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 11px; font-weight: 700;
+    }
+
+    /* -------- Layout -------- */
+    .shell {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+    .sidebar-wrap {
+      padding: 4px 4px 8px 8px;
+      width: 224px;
+      flex: 0 0 224px;
+    }
+    .sidebar {
+      width: 212px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgb(43,44,70) 17%, rgb(113,20,230) 100%);
+      padding: 22px 8px;
+      min-height: calc(100vh - 110px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: sticky;
+      top: 8px;
+    }
+    .sidebar__group { display: flex; flex-direction: column; gap: 4px; }
+    .sidebar__divider {
+      padding: 6px 12px;
+      font-weight: 700;
+      font-size: 9px;
+      letter-spacing: 0.6px;
+      color: var(--purple-mid);
+      text-transform: none;
+    }
+    .nav-item {
+      height: 44px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 12px;
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      position: relative;
+      transition: background 120ms ease;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.06); }
+    .nav-item.is-active {
+      background: rgba(255,255,255,0.14);
+    }
+    .nav-item.is-active::before {
+      content: "";
+      position: absolute; left: -4px; top: 10px; bottom: 10px; width: 3px;
+      background: white;
+      border-radius: 0 3px 3px 0;
+    }
+    .nav-item img { width: 18px; height: 18px; display: block; filter: brightness(0) invert(1); opacity: 0.95; }
+    .nav-item .chev {
+      margin-left: auto;
+      display: inline-block; width: 0; height: 0;
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+      border-left: 5px solid rgba(255,255,255,0.55);
+    }
+    .sidebar__footer {
+      padding: 18px 16px 4px 16px;
+    }
+    .sidebar__footer img {
+      width: 80px; height: 10px; display: block;
+      filter: brightness(0) invert(1);
+      opacity: 0.85;
+    }
+
+    /* -------- Main content -------- */
+    .content {
+      flex: 1;
+      padding: 4px 20px 24px 4px;
+      min-width: 0;
+    }
+    .panel {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 28px 32px 32px 32px;
+      min-height: calc(100vh - 110px);
+    }
+
+    .page-title {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 32px;
+      color: var(--text-2);
+      margin: 0 0 6px 0;
+      letter-spacing: -0.2px;
+    }
+    .page-subtitle {
+      font-size: 15px;
+      font-weight: 400;
+      line-height: 22px;
+      color: var(--text-3);
+      margin: 0 0 24px 0;
+      max-width: 760px;
+    }
+
+    /* -------- Filter tabs -------- */
+    .tabs {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0 22px 0;
+      flex-wrap: wrap;
+    }
+    .tabs__label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      color: var(--text-3);
+      text-transform: uppercase;
+      margin-right: 6px;
+    }
+    .tab {
+      height: 36px;
+      padding: 0 16px;
+      border-radius: 10px;
+      background: var(--chip-bg);
+      border: 1px solid transparent;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-3);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+    }
+    .tab:hover { background: rgb(233, 233, 240); }
+    .tab .count {
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(59, 62, 95, 0.08);
+      color: var(--text-3);
+      padding: 2px 6px;
+      border-radius: 999px;
+      min-width: 18px;
+      text-align: center;
+    }
+    .tab.is-active {
+      background: var(--purple-100);
+      border-color: var(--purple-mid);
+      color: var(--purple);
+    }
+    .tab.is-active .count {
+      background: var(--purple);
+      color: white;
+    }
+
+    /* -------- Grid -------- */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .pcard {
+      background: var(--card);
+      border-radius: 16px;
+      border: 1px solid var(--divider);
+      box-shadow: var(--shadow-card);
+      padding: 22px 22px 20px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 280px;
+      position: relative;
+      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+    }
+    .pcard:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-card-hover);
+      border-color: rgba(151, 69, 255, 0.35);
+    }
+    .pcard__cat-row {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .pcard__cat {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      color: var(--purple);
+      text-transform: uppercase;
+    }
+    .pcard__lock {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+      background: var(--chip-bg);
+      border-radius: 999px;
+      padding: 4px 9px 4px 7px;
+      text-transform: uppercase;
+    }
+    .pcard__lock svg { display: block; }
+
+    .pcard__title {
+      font-size: 19px;
+      font-weight: 700;
+      line-height: 24px;
+      color: var(--text-2);
+      margin: 0;
+      letter-spacing: -0.1px;
+    }
+    .pcard__desc {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 21px;
+      color: var(--text-3);
+      margin: 0;
+      flex: 1;
+    }
+
+    .pcard__meta {
+      display: flex; gap: 14px; align-items: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.16px;
+      padding-top: 2px;
+    }
+    .pcard__meta .dotsep { width: 3px; height: 3px; border-radius: 50%; background: rgba(111,112,128,0.5); display: inline-block; }
+    .pcard__meta .ver {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--purple-50);
+      color: var(--purple);
+      border: 1px solid var(--purple-100);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .pcard__meta .ver .ver-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--purple-mid);
+    }
+
+    .pcard__actions {
+      display: flex; gap: 10px; padding-top: 6px;
+    }
+    .btn {
+      flex: 1;
+      height: 42px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 120ms ease, border-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+      border: 1px solid transparent;
+      padding: 0 12px;
+      white-space: nowrap;
+    }
+    .btn--outline {
+      background: white;
+      color: var(--text-3);
+      border-color: rgb(221, 222, 231);
+    }
+    .btn--outline:hover {
+      border-color: rgb(187, 189, 207);
+      background: rgb(250, 250, 252);
+    }
+    .btn--primary {
+      background: var(--purple);
+      color: white;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset, 0 1px 2px rgba(113,20,230,0.2);
+    }
+    .btn--primary:hover {
+      background: rgb(95, 13, 200);
+      box-shadow: 0 2px 6px rgba(113,20,230,0.32);
+    }
+    .btn svg { display: block; }
+
+    /* hide when filtered */
+    .pcard.is-hidden { display: none; }
+
+    /* Empty state — not currently used */
+    @media (max-width: 1180px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 760px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ====== Top Header ====== -->
+  <header class="header">
+    <div class="header__menu" aria-label="Close menu">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 4L14 14M14 4L4 14" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </div>
+    <div class="header__bar">
+      <div class="header__left">
+        <img class="header__logo" src="assets/PORTAL.svg" alt="PORTAL" />
+        <div class="header__search" role="button" tabindex="0">
+          <span class="label">All accounts</span>
+          <button type="button" aria-label="Clear">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 3L9 9M9 3L3 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </button>
+          <button type="button" aria-label="Open">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="header__right">
+        <span class="header__email">test@nyris.io</span>
+        <div class="header__avatar">T</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="shell">
+    <!-- ====== Sidebar ====== -->
+    <div class="sidebar-wrap">
+      <aside class="sidebar">
+        <div class="sidebar__group">
+          <div class="nav-item"><img src="assets/icon-dashboard.svg" alt="" />Dashboard</div>
+
+          <div class="sidebar__divider">Admin Hub</div>
+          <div class="nav-item"><img src="assets/icon-accounts.svg" alt="" />Accounts<span class="chev"></span></div>
+          <div class="nav-item"><img src="assets/icon-indexes.svg" alt="" />Indexes<span class="chev"></span></div>
+          <div class="nav-item is-active"><img src="assets/icon-prompts.svg" alt="" />Prompts</div>
+
+          <div class="sidebar__divider">Catalogue</div>
+          <div class="nav-item"><img src="assets/icon-requests.svg" alt="" />Requests</div>
+          <div class="nav-item"><img src="assets/icon-items.svg" alt="" />Items</div>
+
+          <div class="sidebar__divider">3D &amp; Rendering</div>
+          <div class="nav-item"><img src="assets/icon-machines.svg" alt="" />Machines<span class="chev"></span></div>
+          <div class="nav-item"><img src="assets/icon-cad.svg" alt="" />CAD rendering</div>
+        </div>
+        <div class="sidebar__footer">
+          <img src="assets/poweredby-nyris.svg" alt="Powered by nyris" />
+        </div>
+      </aside>
+    </div>
+
+    <!-- ====== Content ====== -->
+    <main class="content">
+      <div class="panel">
+        <h1 class="page-title">Prompts Library</h1>
+        <p class="page-subtitle">Read-only reference prompts. Select one to view details or create a customer prompt.</p>
+
+        <div class="tabs" id="tabs">
+          <span class="tabs__label">Filter by</span>
+          <button type="button" class="tab is-active" data-filter="all">All <span class="count">9</span></button>
+          <button type="button" class="tab" data-filter="hybrid">Hybrid <span class="count">3</span></button>
+          <button type="button" class="tab" data-filter="grounding">Grounding <span class="count">3</span></button>
+          <button type="button" class="tab" data-filter="filters">Filters <span class="count">3</span></button>
+        </div>
+
+        <div class="grid" id="grid">
+
+          <!-- ===== HYBRID ===== -->
+          <article class="pcard" data-cat="hybrid">
+            <div class="pcard__cat-row">
+              <span class="pcard__cat">Hybrid Search</span>
+              <span class="pcard__lock">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4.5V3a2.5 2.5 0 1 1 5 0v1.5M2 4.5h6v4H2z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>
+                Read-only
+              </span>
+            </div>
+            <h3 class="pcard__title">Hybrid Search</h3>
+            <p class="pcard__desc">Combines vector similarity with keyword matching to balance semantic understanding with precise term recall across product catalogues.</p>
+            <div class="pcard__meta">
+              <span class="ver"><span class="ver-dot"></span>v2.4 · latest</span>
+              <span class="dotsep"></span>
+              <span>Updated Apr 18</span>
+            </div>
+            <div class="pcard__actions">
+              <button type="button" class="btn btn--outline">View Details</button>
+              <button type="button" class="btn btn--primary">Create Customer Prompt</button>
+            </div>
+          </article>
+
+          <article class="pcard" data-cat="hybrid">
+            <div class="pcard__cat-row">
+              <span class="pcard__cat">Hybrid Search</span>
+              <span class="pcard__lock">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4.5V3a2.5 2.5 0 1 1 5 0v1.5M2 4.5h6v4H2z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>
+                Read-only
+              </span>
+            </div>
+            <h3 class="pcard__title">Visual + Text Matching</h3>
+            <p class="pcard__desc">Blends image embeddings with extracted OCR tokens to find products when the user provides a photo with partial text overlays.</p>
+            <div class="pcard__meta">
+              <span class="ver"><span class="ver-dot"></span>v1.7 · latest</span>
+              <span class="dotsep"></span>
+              <span>Updated Mar 02</span>
+            </div>
+            <div class="pcard__actions">
+              <button type="button" class="btn btn--outline">View Details</button>
+              <button type="button" class="btn btn--primary">Create Customer Prompt</button>
+            </div>
+          </article>
+
+          <article class="pcard" data-cat="hybrid">
+            <div class="pcard__cat-row">
+              <span class="pcard__cat">Hybrid Search</span>
+              <span class="pcard__lock">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4.5V3a2.5 2.5 0 1 1 5 0v1.5M2 4.5h6v4H2z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>
+                Read-only
+              </span>
+            </div>
+            <h3 class="pcard__title">Multimodal Reranking</h3>
+            <p class="pcard__desc">Re-scores an initial candidate set using a cross-encoder that jointly considers image features, attribute metadata and query intent.</p>
+            <div class="pcard__meta">
+              <span class="ver"><span class="ver-dot"></span>v3.1 · latest</span>
+              <span class="dotsep"></span>
+              <span>Updated May 04</span>
+            </div>
+            <div class="pcard__actions">
+              <button type="button" class="btn btn--outline">View Details</button>
+              <button type="button" class="btn btn--primary">Create Customer Prompt</button>
+            </div>
+          </article>
+
+          <!-- ===== GROUNDING ===== -->
+          <article class="pcard" data-cat="grounding">
+            <div class="pcard__cat-row">
+              <span class="pcard__cat">Grounding</span>
+              <span class="pcard__lock">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4.5V3a2.5 2.5 0 1 1 5 0v1.5M2 4.5h6v4H2z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>
+                Read-only
+              </span>
+            </div>
+            <h3 class="pcard__title">Internet Search Identification</h3>
+            <p class="pcard__desc">Detects when a user request needs fresh web context, formulates a targeted search query and returns grounded source URLs alongside the answer.</p>
+            <div class="pcard__meta">
+              <span class="ver"><span class="ver-dot"></span>v2.0 · latest</span>
+              <span class="dotsep"></span>
+              <span>Updated Apr 29</span>
+            </div>
+            <div class="pcard__actions">
+              <button type="button" class="btn btn--outline">View Details</button>
+              <button type="button" class="btn btn--primary">Create Customer Prompt</button>
+            </div>
+          </article>
+
+          <article class="pcard" data-cat="grounding">
+            <div class="pcard__cat-row">
+              <span class="pcard__cat">Grounding</span>
+              <span class="pcard__lock">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4.5V3a2.5 2.5 0 1 1 5 0v1.5M2 4.5h6v4H2z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>
+                Read-only
+              </span>
+            </div>
+            <h3 class="pcard__title">Knowledge Augmentation</h3>
+            <p class="pcard__desc">Pulls supporting passages from a connected knowledge index and injects them into the answer context with inline citations.</p>
+            <div class="pcard__meta">
+              <span class="ver"><span class="ver-dot"></span>v1.4 · latest</span>
+              <span class="dotsep"></span>
+              <span>Updated Mar 21</span>
+            </div>
+            <div class="pcard__actions">
+              <button type="button" class="btn btn--outline">View Details</button>
+              <button type="button" class="btn btn--primary">Create Customer Prompt</button>
+            </div>
+          </article>
+
+          <article class="pcard" data-cat="grounding">
+            <div class="pcard__cat-row">
+              <span class="pcard__cat">Grounding</span>
+              <span class="pcard__lock">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4.5V3a2.5 2.5 0 1 1 5 0v1.5M2 4.5h6v4H2z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>
+                Read-only
+              </span>
+            </div>
+            <h3 class="pcard__title">Source Citation Builder</h3>
+            <p class="pcard__desc">Assembles citation footnotes from retrieved documents and formats them consistently into the final response payload.</p>
+            <div class="pcard__meta">
+              <span class="ver"><span class="ver-dot"></span>v1.1 · latest</span>
+              <span class="dotsep"></span>
+              <span>Updated Feb 11</span>
+            </div>
+            <div class="pcard__actions">
+              <button type="button" class="btn btn--outline">View Details</button>
+              <button type="button" class="btn btn--primary">Create Customer Prompt</button>
+            </div>
+          </article>
+
+          <!-- ===== SMART FILTERS ===== -->
+          <article class="pcard" data-cat="filters">
+            <div class="pcard__cat-row">
+              <span class="pcard__cat">Smart Filters</span>
+              <span class="pcard__lock">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4.5V3a2.5 2.5 0 1 1 5 0v1.5M2 4.5h6v4H2z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>
+                Read-only
+              </span>
+            </div>
+            <h3 class="pcard__title">Smart Category Filter</h3>
+            <p class="pcard__desc">Infers the most likely product category from a free-text query and narrows the candidate set before similarity scoring runs.</p>
+            <div class="pcard__meta">
+              <span class="ver"><span class="ver-dot"></span>v2.2 · latest</span>
+              <span class="dotsep"></span>
+              <span>Updated Apr 09</span>
+            </div>
+            <div class="pcard__actions">
+              <button type="button" class="btn btn--outline">View Details</button>
+              <button type="button" class="btn btn--primary">Create Customer Prompt</button>
+            </div>
+          </article>
+
+          <article class="pcard" data-cat="filters">
+            <div class="pcard__cat-row">
+              <span class="pcard__cat">Smart Filters</span>
+              <span class="pcard__lock">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4.5V3a2.5 2.5 0 1 1 5 0v1.5M2 4.5h6v4H2z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>
+                Read-only
+              </span>
+            </div>
+            <h3 class="pcard__title">Attribute-Based Filter</h3>
+            <p class="pcard__desc">Extracts structured attributes — color, size, material, brand — from natural language and applies them as exact-match facet filters.</p>
+            <div class="pcard__meta">
+              <span class="ver"><span class="ver-dot"></span>v1.9 · latest</span>
+              <span class="dotsep"></span>
+              <span>Updated Mar 17</span>
+            </div>
+            <div class="pcard__actions">
+              <button type="button" class="btn btn--outline">View Details</button>
+              <button type="button" class="btn btn--primary">Create Customer Prompt</button>
+            </div>
+          </article>
+
+          <article class="pcard" data-cat="filters">
+            <div class="pcard__cat-row">
+              <span class="pcard__cat">Smart Filters</span>
+              <span class="pcard__lock">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4.5V3a2.5 2.5 0 1 1 5 0v1.5M2 4.5h6v4H2z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>
+                Read-only
+              </span>
+            </div>
+            <h3 class="pcard__title">Intent Classification</h3>
+            <p class="pcard__desc">Routes incoming requests into one of: identification, comparison, support or browsing — so downstream prompts can specialise accordingly.</p>
+            <div class="pcard__meta">
+              <span class="ver"><span class="ver-dot"></span>v2.6 · latest</span>
+              <span class="dotsep"></span>
+              <span>Updated May 06</span>
+            </div>
+            <div class="pcard__actions">
+              <button type="button" class="btn btn--outline">View Details</button>
+              <button type="button" class="btn btn--primary">Create Customer Prompt</button>
+            </div>
+          </article>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ====== Tab filtering ====== -->
+  <script>
+    (function () {
+      var tabs = document.querySelectorAll('#tabs .tab');
+      var cards = document.querySelectorAll('#grid .pcard');
+      tabs.forEach(function (t) {
+        t.addEventListener('click', function () {
+          tabs.forEach(function (x) { x.classList.remove('is-active'); });
+          t.classList.add('is-active');
+          var f = t.getAttribute('data-filter');
+          cards.forEach(function (c) {
+            if (f === 'all' || c.getAttribute('data-cat') === f) {
+              c.classList.remove('is-hidden');
+            } else {
+              c.classList.add('is-hidden');
+            }
+          });
+        });
+      });
+    })();
+  </script>
+
+  <!-- ====== Tweaks panel ====== -->
+  <div id="tweaks-root"></div>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel">
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "accent": "#7114E6",
+      "primaryStyle": "filled",
+      "cardStyle": "shadow",
+      "showLock": true,
+      "showMeta": true,
+      "density": "comfortable"
+    }/*EDITMODE-END*/;
+
+    function App() {
+      const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+      React.useEffect(() => {
+        const root = document.documentElement;
+        root.style.setProperty('--purple', t.accent);
+        // mid + light shades derived from accent
+        root.style.setProperty('--purple-mid', t.accent);
+        // toggles
+        document.querySelectorAll('.pcard__lock').forEach(el => {
+          el.style.display = t.showLock ? '' : 'none';
+        });
+        document.querySelectorAll('.pcard__meta').forEach(el => {
+          el.style.display = t.showMeta ? '' : 'none';
+        });
+        document.querySelectorAll('.pcard').forEach(el => {
+          if (t.cardStyle === 'flat') {
+            el.style.boxShadow = 'none';
+            el.style.borderColor = 'rgb(221,222,231)';
+          } else if (t.cardStyle === 'accent') {
+            el.style.boxShadow = '0 1px 2px rgba(30,31,49,0.04), 0 6px 18px rgba(30,31,49,0.06)';
+            el.style.borderColor = 'rgba(151,69,255,0.22)';
+          } else {
+            el.style.boxShadow = '';
+            el.style.borderColor = '';
+          }
+          el.style.minHeight = t.density === 'compact' ? '232px' : '280px';
+          el.style.padding = t.density === 'compact' ? '18px 18px 16px 18px' : '22px 22px 20px 22px';
+          el.style.gap = t.density === 'compact' ? '10px' : '14px';
+        });
+        document.querySelectorAll('.btn--primary').forEach(el => {
+          if (t.primaryStyle === 'dark') {
+            el.style.background = 'rgb(30,31,49)';
+            el.style.color = '#fff';
+            el.style.boxShadow = 'none';
+          } else {
+            el.style.background = '';
+            el.style.color = '';
+            el.style.boxShadow = '';
+          }
+        });
+      }, [t.accent, t.primaryStyle, t.cardStyle, t.showLock, t.showMeta, t.density]);
+
+      return (
+        <TweaksPanel title="Tweaks">
+          <TweakSection title="Brand">
+            <TweakColor label="Accent" value={t.accent} onChange={v => setTweak('accent', v)}
+              options={["#7114E6", "#3E36DC", "#1E1F31", "#00C070"]} />
+          </TweakSection>
+          <TweakSection title="Cards">
+            <TweakRadio label="Card style" value={t.cardStyle} onChange={v => setTweak('cardStyle', v)}
+              options={[
+                { label: "Shadow", value: "shadow" },
+                { label: "Flat", value: "flat" },
+                { label: "Accent", value: "accent" },
+              ]} />
+            <TweakRadio label="Density" value={t.density} onChange={v => setTweak('density', v)}
+              options={[
+                { label: "Comfortable", value: "comfortable" },
+                { label: "Compact", value: "compact" },
+              ]} />
+            <TweakToggle label="Show read-only badge" value={t.showLock} onChange={v => setTweak('showLock', v)} />
+            <TweakToggle label="Show version + date" value={t.showMeta} onChange={v => setTweak('showMeta', v)} />
+          </TweakSection>
+          <TweakSection title="Buttons">
+            <TweakRadio label="Primary style" value={t.primaryStyle} onChange={v => setTweak('primaryStyle', v)}
+              options={[
+                { label: "Purple", value: "filled" },
+                { label: "Dark", value: "dark" },
+              ]} />
+          </TweakSection>
+        </TweaksPanel>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('tweaks-root')).render(<App />);
+  </script>
+
+</body>
+</html>
