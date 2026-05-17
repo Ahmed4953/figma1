@@ -78,6 +78,14 @@ function saveCustomPrompts(list) {
   localStorage.setItem(CUSTOM_PROMPTS_KEY, JSON.stringify(list));
 }
 
+function upsertCustomPrompt(prompt) {
+  const list = loadCustomPrompts();
+  const idx = list.findIndex((p) => p.id === prompt.id);
+  if (idx >= 0) list[idx] = prompt; else list.unshift(prompt);
+  saveCustomPrompts(list);
+  window.dispatchEvent(new CustomEvent("nyris-custom-prompts-changed"));
+}
+
 function findLibraryPrompt(id) {
   return loadCustomPrompts().find((p) => p.id === id) || PROMPTS.find((p) => p.id === id);
 }
@@ -97,8 +105,7 @@ function useLibraryPrompts() {
   }, [refresh]);
 
   const create = React.useCallback((prompt) => {
-    saveCustomPrompts([prompt, ...loadCustomPrompts()]);
-    window.dispatchEvent(new CustomEvent("nyris-custom-prompts-changed"));
+    upsertCustomPrompt(prompt);
   }, []);
 
   return { prompts, create };
@@ -707,6 +714,8 @@ function BuilderPage({ id }) {
     const now = new Date().toISOString();
     const prev = loadDrafts().find((d) => d.id === draftId);
     const named = promptName.trim() || "Untitled prompt";
+    const account = PROMPTS_BUILDER_ACCOUNTS.find((a) => a.id === accountId);
+    const customPromptId = "custom_" + draftId;
     const dataChanged =
     !prev ||
     (prev.promptBody || "") !== promptBody ||
@@ -743,7 +752,22 @@ function BuilderPage({ id }) {
       versions
     };
     upsert(next);
+    upsertCustomPrompt({
+      id: customPromptId,
+      cat: template.cat,
+      catKey: template.catKey,
+      title: named,
+      desc: description,
+      ver: template.ver || "v1",
+      date: new Date(now).toLocaleDateString("en", { month: "short", day: "2-digit", year: "numeric" }),
+      what: description,
+      where: "Used for " + template.cat.toLowerCase() + " workflows on " + (account ? account.label : "the selected account") + ".",
+      impact: "Helps tailor search behavior to the account's catalogue, terminology, and expected result format.",
+      promptBody,
+      accountId
+    });
     setSavedAt(now);
+    go("/detail/" + customPromptId);
   };
 
   return (
