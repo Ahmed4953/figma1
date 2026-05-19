@@ -166,14 +166,17 @@ function cpwFormatDisplayDate(date) {
   return mm + "/" + dd + "/" + yyyy;
 }
 
-function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath }) {
+function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionId: sessionIdProp, syncUrl = true }) {
   const lockedBaseId = initialBaseId || null;
   const startStep = typeof initialStep === "number" ? initialStep : 0;
   const exitPath = cancelPath || "/library";
+  const { route, arg } = useRoute();
+  const routeStep = typeof cpwStepFromRoute === "function" ? cpwStepFromRoute(route) : null;
 
   const { create } = useLibraryPrompts();
   const baseOptions = React.useMemo(() => cpwGetBaseOptions(), []);
-  const [step, setStep] = React.useState(startStep);
+  const [step, setStep] = React.useState(() =>
+  routeStep != null ? routeStep : startStep);
   const [baseId, setBaseId] = React.useState(
     () => lockedBaseId || baseOptions[0]?.id || "hybrid-search");
   const [customerName, setCustomerName] = React.useState("");
@@ -196,6 +199,26 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath }) {
 
   const base = React.useMemo(() => cpwGetBasePreset(baseId), [baseId]);
   const account = CPW_ACCOUNTS.find((a) => a.id === accountId);
+  const sessionId = sessionIdProp || arg || lockedBaseId || baseId;
+
+  const goToStep = React.useCallback((nextStep) => {
+    setStep(nextStep);
+    if (syncUrl && typeof cpwPathForStep === "function") {
+      const path = cpwPathForStep(nextStep, sessionId);
+      const current = window.location.hash || "";
+      if (current !== "#" + path && current !== path) go(path);
+    }
+  }, [sessionId, syncUrl]);
+
+  React.useEffect(() => {
+    const syncFromHash = () => {
+      if (typeof parseHash !== "function" || typeof cpwStepFromRoute !== "function") return;
+      const s = cpwStepFromRoute(parseHash().route);
+      if (s != null) setStep(s);
+    };
+    window.addEventListener("hashchange", syncFromHash);
+    return () => window.removeEventListener("hashchange", syncFromHash);
+  }, []);
 
   React.useEffect(() => {
     const defaultName = base.title + " – Custom";
@@ -214,10 +237,10 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath }) {
   const goBack = () => {
     const minStep = lockedBaseId ? startStep : 0;
     if (step <= minStep) go(exitPath);
-    else setStep((s) => s - 1);
+    else goToStep(step - 1);
   };
 
-  const goNext = () => setStep((s) => Math.min(s + 1, CPW_STEPS.length - 1));
+  const goNext = () => goToStep(Math.min(step + 1, CPW_STEPS.length - 1));
 
   const savePrompt = () => {
     const now = new Date();

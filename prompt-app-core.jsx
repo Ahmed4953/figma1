@@ -142,8 +142,38 @@ const DEFAULT_ROUTE_ARGS = {
   created: "custom_sample_mechatech_hybrid",
   detail: "hybrid-search",
   improve: "custom_sample_mechatech_hybrid",
-  "cpw-metadata": "hybrid-search"
+  "cpw-metadata": "hybrid-search",
+  "builder-metadata": "hybrid-search",
+  "builder-sections": "hybrid-search",
+  "builder-generate": "hybrid-search"
 };
+
+const CPW_STEP_BY_ROUTE = {
+  request: 0,
+  builder: 1,
+  "builder-metadata": 2,
+  "cpw-metadata": 2,
+  "builder-sections": 3,
+  "builder-generate": 4
+};
+
+const CPW_ROUTE_BY_STEP = [
+  "request",
+  "builder",
+  "builder-metadata",
+  "builder-sections",
+  "builder-generate"
+];
+
+function cpwStepFromRoute(route) {
+  return CPW_STEP_BY_ROUTE[route] ?? null;
+}
+
+function cpwPathForStep(step, sessionId) {
+  const route = CPW_ROUTE_BY_STEP[step];
+  if (!route || route === "request") return "/request";
+  return "/" + route + "/" + (sessionId || "hybrid-search");
+}
 
 function parseHash() {
   const h = (window.location.hash || "#/library").replace(/^#/, "");
@@ -208,6 +238,9 @@ window.useRoute = useRoute;
 window.go = go;
 window.useDrafts = useDrafts;
 window.loadDrafts = loadDrafts;
+window.parseHash = parseHash;
+window.cpwStepFromRoute = cpwStepFromRoute;
+window.cpwPathForStep = cpwPathForStep;
 
 // ────────────────────────────────────────────────────────────────────
 // Status model

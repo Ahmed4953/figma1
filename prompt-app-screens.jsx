@@ -686,24 +686,25 @@ function newDraftId() {
   return "d_" + Math.random().toString(36).slice(2, 9);
 }
 
-function BuilderPage({ id }) {
-  const template = findLibraryPrompt(id) || FALLBACK_PROMPT_DETAIL;
-  return (
-    <CustomerPromptWizard
-      initialBaseId={template.id}
-      initialStep={1}
-      cancelPath="/library"
-    />
-  );
+function resolveWizardSession(record) {
+  const session = record || FALLBACK_PROMPT_DETAIL;
+  return {
+    baseId: session.templateId || session.id,
+    sessionId: session.id
+  };
 }
 
-/** Dedicated Builder.io / share URL — opens wizard on Metadata (step 3). */
-function CustomerPromptMetadataPage({ id }) {
-  const template = findLibraryPrompt(id) || FALLBACK_PROMPT_DETAIL;
+/** Builder wizard — URL reflects the active step (review, metadata, sections, generate). */
+function BuilderWizardPage({ id }) {
+  const { route } = useRoute();
+  const record = findLibraryPrompt(id) || FALLBACK_PROMPT_DETAIL;
+  const { baseId, sessionId } = resolveWizardSession(record);
+  const step = typeof cpwStepFromRoute === "function" ? cpwStepFromRoute(route) : 1;
   return (
     <CustomerPromptWizard
-      initialBaseId={template.id}
-      initialStep={2}
+      initialBaseId={baseId}
+      sessionId={sessionId}
+      initialStep={step != null ? step : 1}
       cancelPath="/library"
     />
   );
@@ -741,11 +742,13 @@ function PromptApp() {
   const { route, arg } = useRoute();
   if (route === "library") return <LibraryPage />;
   if (route === "request") return <RequestPromptPage />;
-  if (route === "cpw-metadata") return <CustomerPromptMetadataPage key={arg || "hybrid-search"} id={arg} />;
   if (route === "detail") return <DetailPage id={arg} />;
   if (route === "created") return <DetailPage id={arg} showAction />;
   if (route === "improve") return <DetailPage id={arg} showAction showImprove />;
-  if (route === "builder") return <BuilderPage key={arg || "new"} id={arg} />;
+  if (route === "builder" || route === "builder-metadata" || route === "builder-sections" ||
+  route === "builder-generate" || route === "cpw-metadata") {
+    return <BuilderWizardPage key={route + "-" + (arg || "hybrid-search")} id={arg} />;
+  }
   if (route === "compare") return <ComparePage id={arg} />;
   if (route === "sandbox") return <SandboxPage id={arg} />;
   if (route === "history") return <HistoryPage id={arg} />;
