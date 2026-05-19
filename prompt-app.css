@@ -841,6 +841,28 @@
   margin-top: 28px; padding-top: 20px;
   border-top: 1px solid var(--divider);
 }
+
+/* Created prompt detail — demo / hydrated view */
+.det-created-desc {
+  margin: 6px 0 0 0;
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--text-3);
+  max-width: 720px;
+}
+.det-created-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 13.5px;
+  color: var(--text-3);
+}
+.det-name-row .sbadge { flex-shrink: 0; }
+
+/* Static prerender (visible before React loads — Builder.io capture) */
+.nyris-prerender[hidden] { display: none !important; }
+.nyris-prerender .pl-panel { padding: 22px 28px 28px 28px; }
 @media (max-width: 720px) {
   .cpw-card { padding: 20px 18px 18px 18px; }
   .cpw-guide-row { grid-template-columns: 1fr; gap: 4px; }

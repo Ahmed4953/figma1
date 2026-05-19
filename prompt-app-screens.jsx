@@ -72,48 +72,91 @@ CONSTRAINTS:
 - Never include products that fail the smart-filter step.`
 };
 
-/** Static sample shown when a created/custom prompt is not in localStorage (e.g. Builder.io capture). */
-const FALLBACK_CREATED_PROMPT = {
+const DEMO_CREATED_PROMPT_BODY = `**TASK**: Combine semantic embeddings with keyword retrieval to produce a balanced ranked list of products.
+
+STEPS:
+1. Normalize the user query and detect language.
+2. Compute the dense vector representation of the query using the configured embedding model.
+3. Run a kNN search against the product index, retrieving the top 200 candidates by cosine similarity.
+4. In parallel, run a BM25 keyword search over the same index using the original query.
+5. Merge candidate sets using reciprocal-rank fusion with weights alpha=0.6 and beta=0.4.
+6. Apply the configured smart filters before final ranking.
+7. Return the top N hits as a JSON array with id, score and matched fields.
+
+CONSTRAINTS:
+- The response must be valid JSON.
+- Scores must be normalized to the [0, 1] interval.
+- Never include products that fail the smart-filter step.`;
+
+/** Default demo prompt — renders synchronously on first paint; replaced when storage loads. */
+const DEMO_CREATED_PROMPT = {
   id: "custom_sample_mechatech_hybrid",
   cat: "Hybrid Search",
   catKey: "hybrid",
   title: "MechaTech — Hybrid Search v1",
-  desc: "Custom hybrid retrieval tuned for MechaTech spare-parts catalogue with visual + OCR signals.",
+  templateTitle: "Hybrid Search",
+  templateVersion: "v2.4",
+  desc: "Tuned for spare parts catalogue with extended attribute filters.",
   ver: "v1",
   date: "May 19, 2026",
   accountId: "mechatech",
   templateId: "hybrid-search",
-  isFallback: true,
+  status: "draft",
+  isDemo: true,
   isCreatedSample: true,
-  what: "Classifies an image and its OCR text into visual/text categories, builds a BM25 search query, and extracts fixed product specifications like VIN and tire attributes.",
-  where: "Used for hybrid search workflows on MechaTech / mechatech_solutions_testing.",
-  impact: "Determines whether visual or textual search is primary for a given request. A wrong classification degrades recall for that image.",
-  promptBody: `**TASK**: Combine semantic embeddings with keyword retrieval for MechaTech spare-parts search.
-
-# CUSTOMER CONTEXT
-MechaTech sells industrial pumps and replacement parts to maintenance teams across DACH.
-Customers upload phone photos of nameplates and ask for the matching spare part.
-
-# DOMAIN TERMINOLOGY
-MX-2400 = flagship hydraulic pump series
-HSK = Hydraulic Service Kit
-
-# STEPS
-1. Normalize the user query and detect language.
-2. Classify visual vs textual signals from the uploaded image and OCR text.
-3. Run dense vector retrieval and BM25 keyword search in parallel.
-4. Merge with reciprocal-rank fusion (alpha=0.6, beta=0.4).
-5. Return top N hits as JSON with id, score, and matched fields.
-
-# CONSTRAINTS
-- Response must be valid JSON.
-- Scores normalized to [0, 1].
-- Never include products that fail configured smart filters.`
+  promptBody: DEMO_CREATED_PROMPT_BODY
 };
 
+const FALLBACK_CREATED_PROMPT = DEMO_CREATED_PROMPT;
+
+function getDemoCreatedPrompt(urlId) {
+  const key = urlId && String(urlId).trim() ? String(urlId).trim() : DEMO_CREATED_PROMPT.id;
+  return { ...DEMO_CREATED_PROMPT, id: key };
+}
+
+function isCustomerCreatedRoute(id, showAction) {
+  return Boolean(showAction || (id && String(id).startsWith("custom_")));
+}
+
+function usePromptDetailState(id, showAction) {
+  const isCreated = isCustomerCreatedRoute(id, showAction);
+
+  const [prompt, setPrompt] = React.useState(() =>
+  isCreated ? getDemoCreatedPrompt(id) : resolvePromptForDetail(id, showAction));
+
+  React.useEffect(() => {
+    if (!isCreated) {
+      const stored = id ? loadCustomPrompts().find((p) => p.id === id) : null;
+      setPrompt(stored || resolvePromptForDetail(id, showAction));
+      return undefined;
+    }
+
+    setPrompt(getDemoCreatedPrompt(id));
+    const stored = id ? loadCustomPrompts().find((p) => p.id === id) : null;
+    if (stored) setPrompt(stored);
+
+    const onRefresh = () => {
+      const next = id ? loadCustomPrompts().find((p) => p.id === id) : null;
+      if (next) setPrompt(next);
+    };
+
+    window.addEventListener("nyris-custom-prompts-changed", onRefresh);
+    window.addEventListener("storage", onRefresh);
+    return () => {
+      window.removeEventListener("nyris-custom-prompts-changed", onRefresh);
+      window.removeEventListener("storage", onRefresh);
+    };
+  }, [id, showAction, isCreated]);
+
+  return prompt;
+}
+
 function resolvePromptForDetail(id, showAction) {
+  if (isCustomerCreatedRoute(id, showAction)) {
+    return getDemoCreatedPrompt(id);
+  }
+
   const key = id && String(id).trim() ? String(id).trim() : null;
-  const wantsCreatedView = Boolean(showAction || (key && key.startsWith("custom_")));
 
   if (key) {
     const fromStorage = loadCustomPrompts().find((p) => p.id === key);
@@ -121,12 +164,8 @@ function resolvePromptForDetail(id, showAction) {
 
     if (typeof PROMPTS !== "undefined") {
       const fromCatalog = PROMPTS.find((p) => p.id === key);
-      if (fromCatalog && !wantsCreatedView) return fromCatalog;
+      if (fromCatalog) return fromCatalog;
     }
-  }
-
-  if (wantsCreatedView) {
-    return { ...FALLBACK_CREATED_PROMPT, id: key || FALLBACK_CREATED_PROMPT.id };
   }
 
   return { ...FALLBACK_PROMPT_DETAIL, id: key || FALLBACK_PROMPT_DETAIL.id };
@@ -157,7 +196,7 @@ function findLibraryPrompt(id) {
     const fromCatalog = PROMPTS.find((p) => p.id === id);
     if (fromCatalog) return fromCatalog;
   }
-  if (id === FALLBACK_CREATED_PROMPT.id) return FALLBACK_CREATED_PROMPT;
+  if (id === DEMO_CREATED_PROMPT.id) return DEMO_CREATED_PROMPT;
   return null;
 }
 
@@ -394,12 +433,13 @@ function DetailPage({ id, showImprove, showAction }) {
   const [improveRequest, setImproveRequest] = React.useState(`The image_description field is too vague. Push the AI to include the
 object type, condition, and any visible text or markings. Also, can we
 add a confidence level field to the JSON output?`);
-  const p = resolvePromptForDetail(id, showAction);
+  const isCreatedLayout = isCustomerCreatedRoute(id, showAction);
+  const p = usePromptDetailState(id, showAction);
   const account = PROMPTS_BUILDER_ACCOUNTS.find((a) => a.id === p.accountId);
-  const accountLabel = account ? account.label : "All accounts";
-  const isCreatedLayout = Boolean(showAction || p.isCreatedSample || String(p.id).startsWith("custom_"));
-  const customPromptBody = isCreatedLayout || p.isFallback ?
-  (p.promptBody || p.what) :
+  const accountLabel = account ? account.label : "MechaTech / mechatech_solutions_testing";
+  const templateLabel = (p.templateTitle || "Hybrid Search") + " · " + (p.templateVersion || "v2.4");
+  const customPromptBody = isCreatedLayout ?
+  (p.promptBody || DEMO_CREATED_PROMPT_BODY) :
   (p.promptBody || buildDetailViewPromptBody());
   const isCustomPrompt = String(p.id).startsWith("custom_") || Boolean(p.isCreatedSample);
   const detailPath = showAction ? "/created/" + p.id : "/detail/" + p.id;
@@ -426,9 +466,15 @@ add a confidence level field to the JSON output?`);
             <div className="det-cat">{p.cat}</div>
             <div className="det-name-row">
               <h1 className="det-name">{p.title}</h1>
+              <StatusBadge status={p.status || "draft"} />
               <span className="det-info" title={p.desc}>i</span>
             </div>
             <p className="det-account">{accountLabel}</p>
+            <p className="det-created-desc">{p.desc}</p>
+            <div className="det-created-meta">
+              <span className="badge">Template</span>
+              <span>{templateLabel}</span>
+            </div>
           </div>
         </div>
 
@@ -699,3 +745,6 @@ window.buildDefaultPromptBodyForCreateModal = buildDefaultPromptBodyForCreateMod
 window.resolvePromptForDetail = resolvePromptForDetail;
 window.FALLBACK_PROMPT_DETAIL = FALLBACK_PROMPT_DETAIL;
 window.FALLBACK_CREATED_PROMPT = FALLBACK_CREATED_PROMPT;
+window.DEMO_CREATED_PROMPT = DEMO_CREATED_PROMPT;
+window.getDemoCreatedPrompt = getDemoCreatedPrompt;
+window.DEMO_CREATED_PROMPT_BODY = DEMO_CREATED_PROMPT_BODY;

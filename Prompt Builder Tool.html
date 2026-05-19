@@ -17,9 +17,65 @@
     #root { display: flex; min-height: 100vh; }
     #root > .pl { width: 100%; }
   </style>
+  <script>
+    (function () {
+      var hash = window.location.hash || "";
+      window.__NYRIS_SHOW_PRERENDER__ = /#\/(created|improve)(\/|$)/.test(hash);
+    })();
+  </script>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div id="nyris-prerender" class="pl nyris-prerender" hidden>
+      <div class="pl-shell">
+        <main class="pl-content">
+          <div class="pl-panel">
+            <div class="det-cat">Hybrid Search</div>
+            <div class="det-name-row">
+              <h1 class="det-name">MechaTech — Hybrid Search v1</h1>
+              <span class="sbadge sbadge--grey"><span class="sbadge-dot"></span>Draft</span>
+            </div>
+            <p class="det-account">MechaTech / mechatech_solutions_testing</p>
+            <p class="det-created-desc">Tuned for spare parts catalogue with extended attribute filters.</p>
+            <div class="det-created-meta">
+              <span class="badge">Template</span>
+              <span>Hybrid Search · v2.4</span>
+            </div>
+            <div class="det-bar" style="margin-top: 20px;">
+              <span class="det-ver">Version v1 <span class="muted">(latest)</span><span class="det-ver-dot"></span></span>
+            </div>
+            <div class="det-section">
+              <div class="codeblock-wrap">
+                <pre class="codeblock-light">**TASK**: Combine semantic embeddings with keyword retrieval to produce a balanced ranked list of products.
+
+STEPS:
+1. Normalize the user query and detect language.
+2. Compute the dense vector representation of the query using the configured embedding model.
+3. Run a kNN search against the product index, retrieving the top 200 candidates by cosine similarity.
+4. In parallel, run a BM25 keyword search over the same index using the original query.
+5. Merge candidate sets using reciprocal-rank fusion with weights alpha=0.6 and beta=0.4.
+6. Apply the configured smart filters before final ranking.
+7. Return the top N hits as a JSON array with id, score and matched fields.
+
+CONSTRAINTS:
+- The response must be valid JSON.
+- Scores must be normalized to the [0, 1] interval.
+- Never include products that fail the smart-filter step.</pre>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      if (window.__NYRIS_SHOW_PRERENDER__) {
+        var el = document.getElementById("nyris-prerender");
+        if (el) el.removeAttribute("hidden");
+      }
+    })();
+  </script>
 
   <script type="text/babel" src="portal-chrome.jsx"></script>
   <script type="text/babel" src="prompt-app-core.jsx"></script>
