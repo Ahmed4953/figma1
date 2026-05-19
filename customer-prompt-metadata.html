@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Customer prompt metadata · nyris Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Customer prompt creation — metadata step (Builder.io capture)" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Fira+Sans:wght@600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="prompts-screens.css" />
+  <link rel="stylesheet" href="prompt-app.css" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    html, body { margin: 0; padding: 0; background: rgb(221, 222, 231); min-height: 100vh; }
+    #root { display: flex; min-height: 100vh; }
+    #root > .pl { width: 100%; }
+  </style>
+  <script>
+    (function () {
+      var hash = window.location.hash || "";
+      if (!hash || hash === "#") {
+        window.location.hash = "#/cpw-metadata/hybrid-search";
+      }
+      window.__NYRIS_SHOW_PRERENDER__ = true;
+    })();
+  </script>
+</head>
+<body>
+  <div id="root">
+    <div id="nyris-prerender" class="pl nyris-prerender">
+      <div class="pl-shell">
+        <main class="pl-content">
+          <div class="cpw">
+            <p class="det-back cpw-cancel">Back</p>
+            <div class="cpw-head">
+              <div class="cpw-eyebrow">Customer prompt creation</div>
+              <h1 class="cpw-title">Hybrid Search – Custom</h1>
+            </div>
+            <ol class="cpw-stepper" aria-label="Creation progress">
+              <li class="cpw-step is-done">
+                <span class="cpw-step-marker" aria-hidden="true">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.2L4.8 8.5L9.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                <span class="cpw-step-label">Select Base</span>
+                <span class="cpw-step-line" aria-hidden="true"></span>
+              </li>
+              <li class="cpw-step is-done">
+                <span class="cpw-step-marker" aria-hidden="true">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.2L4.8 8.5L9.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                <span class="cpw-step-label">Review</span>
+                <span class="cpw-step-line" aria-hidden="true"></span>
+              </li>
+              <li class="cpw-step is-active">
+                <span class="cpw-step-marker" aria-hidden="true">3</span>
+                <span class="cpw-step-label">Metadata</span>
+                <span class="cpw-step-line" aria-hidden="true"></span>
+              </li>
+              <li class="cpw-step">
+                <span class="cpw-step-marker" aria-hidden="true">4</span>
+                <span class="cpw-step-label">Edit Sections</span>
+                <span class="cpw-step-line" aria-hidden="true"></span>
+              </li>
+              <li class="cpw-step">
+                <span class="cpw-step-marker" aria-hidden="true">5</span>
+                <span class="cpw-step-label">Generate</span>
+              </li>
+            </ol>
+            <div class="cpw-card">
+              <h2 class="cpw-panel-title">Customer metadata</h2>
+              <p class="cpw-panel-lead">Enter identifying information for this customer prompt.</p>
+              <div class="cpw-meta-grid">
+                <div class="field">
+                  <label class="field-label">Customer name</label>
+                  <input class="field-input" type="text" placeholder="e.g. RS Components" />
+                </div>
+                <div class="field">
+                  <label class="field-label">Prompt name</label>
+                  <input class="field-input" type="text" value="Hybrid Search – Custom" />
+                </div>
+                <div class="field">
+                  <label class="field-label">Owner / author</label>
+                  <input class="field-input" type="text" placeholder="Your name" />
+                </div>
+                <div class="field">
+                  <label class="field-label">Created date</label>
+                  <input class="field-input" type="text" value="05/19/2026" />
+                </div>
+              </div>
+              <div class="field cpw-meta-notes">
+                <label class="field-label">Notes</label>
+                <textarea class="field-textarea" placeholder="Optional context about this customization"></textarea>
+              </div>
+              <div class="cpw-meta-summary">
+                <span class="badge">Template</span>
+                <span>Hybrid Search · v2.4</span>
+              </div>
+              <div class="cpw-foot">
+                <button type="button" class="btn btn--primary" style="flex: 0 0 auto; min-width: 168px; margin-left: auto;">Next: Edit Sections</button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/babel" src="portal-chrome.jsx"></script>
+  <script type="text/babel" src="prompt-app-core.jsx"></script>
+  <script type="text/babel" src="prompt-app-screens.jsx"></script>
+  <script type="text/babel" src="prompt-app-wizard.jsx"></script>
+  <script type="text/babel" src="prompt-app-features.jsx"></script>
+  <script type="text/babel" data-presets="react">
+    ReactDOM.createRoot(document.getElementById('root')).render(<PromptApp />);
+  </script>
+</body>
+</html>

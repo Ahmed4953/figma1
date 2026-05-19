@@ -141,7 +141,8 @@ a structured response.
 const DEFAULT_ROUTE_ARGS = {
   created: "custom_sample_mechatech_hybrid",
   detail: "hybrid-search",
-  improve: "custom_sample_mechatech_hybrid"
+  improve: "custom_sample_mechatech_hybrid",
+  "cpw-metadata": "hybrid-search"
 };
 
 function parseHash() {

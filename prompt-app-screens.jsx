@@ -697,6 +697,18 @@ function BuilderPage({ id }) {
   );
 }
 
+/** Dedicated Builder.io / share URL — opens wizard on Metadata (step 3). */
+function CustomerPromptMetadataPage({ id }) {
+  const template = findLibraryPrompt(id) || FALLBACK_PROMPT_DETAIL;
+  return (
+    <CustomerPromptWizard
+      initialBaseId={template.id}
+      initialStep={2}
+      cancelPath="/library"
+    />
+  );
+}
+
 
 function formatRelative(iso) {
   if (!iso) return "—";
@@ -729,6 +741,7 @@ function PromptApp() {
   const { route, arg } = useRoute();
   if (route === "library") return <LibraryPage />;
   if (route === "request") return <RequestPromptPage />;
+  if (route === "cpw-metadata") return <CustomerPromptMetadataPage key={arg || "hybrid-search"} id={arg} />;
   if (route === "detail") return <DetailPage id={arg} />;
   if (route === "created") return <DetailPage id={arg} showAction />;
   if (route === "improve") return <DetailPage id={arg} showAction showImprove />;
