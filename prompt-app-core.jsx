@@ -138,10 +138,18 @@ a structured response.
 // ────────────────────────────────────────────────────────────────────
 // Routing
 // ────────────────────────────────────────────────────────────────────
+const DEFAULT_ROUTE_ARGS = {
+  created: "custom_sample_mechatech_hybrid",
+  detail: "hybrid-search",
+  improve: "custom_sample_mechatech_hybrid"
+};
+
 function parseHash() {
   const h = (window.location.hash || "#/library").replace(/^#/, "");
   const parts = h.split("/").filter(Boolean);
-  return { route: parts[0] || "library", arg: parts[1] || null };
+  const route = parts[0] || "library";
+  const arg = parts[1] || DEFAULT_ROUTE_ARGS[route] || null;
+  return { route, arg };
 }
 function useRoute() {
   const [r, setR] = React.useState(parseHash);

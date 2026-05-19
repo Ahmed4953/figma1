@@ -43,15 +43,18 @@ const PROMPT_CATEGORIES = [
 { id: "filters", label: "Filters", tabLabel: "Filters" }];
 
 const FALLBACK_PROMPT_DETAIL = {
-  id: "fallback-hybrid-search",
+  id: "hybrid-search",
   cat: "HYBRID SEARCH",
   catKey: "hybrid",
   title: "Hybrid Search",
-  desc: "Combines semantic embeddings with keyword retrieval to produce a balanced ranked list of products.",
+  desc: "Combines vector similarity with keyword matching to balance semantic understanding with precise term recall across product catalogues.",
   ver: "v2.4",
-  date: "May 17, 2026",
+  date: "Apr 18, 2026",
   accountId: "mechatech",
   isFallback: true,
+  what: "Combines a dense vector retriever with a sparse keyword retriever, then fuses the two candidate lists with reciprocal-rank fusion. Returns the top N hits as a ranked JSON array.",
+  where: "Default retrieval prompt for any account that has both an embedding index and a keyword index configured. Runs as step 1 of the search pipeline.",
+  impact: "Lifts recall on long-tail catalogues where customers mix free-text descriptions with exact part numbers. Typical +12% nDCG@10 over keyword-only baseline.",
   promptBody: `**TASK**: Combine semantic embeddings with keyword retrieval to produce a balanced ranked list of products.
 
 STEPS:
@@ -68,6 +71,66 @@ CONSTRAINTS:
 - Scores must be normalized to the [0, 1] interval.
 - Never include products that fail the smart-filter step.`
 };
+
+/** Static sample shown when a created/custom prompt is not in localStorage (e.g. Builder.io capture). */
+const FALLBACK_CREATED_PROMPT = {
+  id: "custom_sample_mechatech_hybrid",
+  cat: "Hybrid Search",
+  catKey: "hybrid",
+  title: "MechaTech — Hybrid Search v1",
+  desc: "Custom hybrid retrieval tuned for MechaTech spare-parts catalogue with visual + OCR signals.",
+  ver: "v1",
+  date: "May 19, 2026",
+  accountId: "mechatech",
+  templateId: "hybrid-search",
+  isFallback: true,
+  isCreatedSample: true,
+  what: "Classifies an image and its OCR text into visual/text categories, builds a BM25 search query, and extracts fixed product specifications like VIN and tire attributes.",
+  where: "Used for hybrid search workflows on MechaTech / mechatech_solutions_testing.",
+  impact: "Determines whether visual or textual search is primary for a given request. A wrong classification degrades recall for that image.",
+  promptBody: `**TASK**: Combine semantic embeddings with keyword retrieval for MechaTech spare-parts search.
+
+# CUSTOMER CONTEXT
+MechaTech sells industrial pumps and replacement parts to maintenance teams across DACH.
+Customers upload phone photos of nameplates and ask for the matching spare part.
+
+# DOMAIN TERMINOLOGY
+MX-2400 = flagship hydraulic pump series
+HSK = Hydraulic Service Kit
+
+# STEPS
+1. Normalize the user query and detect language.
+2. Classify visual vs textual signals from the uploaded image and OCR text.
+3. Run dense vector retrieval and BM25 keyword search in parallel.
+4. Merge with reciprocal-rank fusion (alpha=0.6, beta=0.4).
+5. Return top N hits as JSON with id, score, and matched fields.
+
+# CONSTRAINTS
+- Response must be valid JSON.
+- Scores normalized to [0, 1].
+- Never include products that fail configured smart filters.`
+};
+
+function resolvePromptForDetail(id, showAction) {
+  const key = id && String(id).trim() ? String(id).trim() : null;
+  const wantsCreatedView = Boolean(showAction || (key && key.startsWith("custom_")));
+
+  if (key) {
+    const fromStorage = loadCustomPrompts().find((p) => p.id === key);
+    if (fromStorage) return fromStorage;
+
+    if (typeof PROMPTS !== "undefined") {
+      const fromCatalog = PROMPTS.find((p) => p.id === key);
+      if (fromCatalog && !wantsCreatedView) return fromCatalog;
+    }
+  }
+
+  if (wantsCreatedView) {
+    return { ...FALLBACK_CREATED_PROMPT, id: key || FALLBACK_CREATED_PROMPT.id };
+  }
+
+  return { ...FALLBACK_PROMPT_DETAIL, id: key || FALLBACK_PROMPT_DETAIL.id };
+}
 
 function loadCustomPrompts() {
   try { return JSON.parse(localStorage.getItem(CUSTOM_PROMPTS_KEY)) || []; }
@@ -87,7 +150,15 @@ function upsertCustomPrompt(prompt) {
 }
 
 function findLibraryPrompt(id) {
-  return loadCustomPrompts().find((p) => p.id === id) || PROMPTS.find((p) => p.id === id);
+  if (!id) return null;
+  const fromStorage = loadCustomPrompts().find((p) => p.id === id);
+  if (fromStorage) return fromStorage;
+  if (typeof PROMPTS !== "undefined") {
+    const fromCatalog = PROMPTS.find((p) => p.id === id);
+    if (fromCatalog) return fromCatalog;
+  }
+  if (id === FALLBACK_CREATED_PROMPT.id) return FALLBACK_CREATED_PROMPT;
+  return null;
 }
 
 function useLibraryPrompts() {
@@ -323,11 +394,14 @@ function DetailPage({ id, showImprove, showAction }) {
   const [improveRequest, setImproveRequest] = React.useState(`The image_description field is too vague. Push the AI to include the
 object type, condition, and any visible text or markings. Also, can we
 add a confidence level field to the JSON output?`);
-  const p = findLibraryPrompt(id) || FALLBACK_PROMPT_DETAIL;
+  const p = resolvePromptForDetail(id, showAction);
   const account = PROMPTS_BUILDER_ACCOUNTS.find((a) => a.id === p.accountId);
   const accountLabel = account ? account.label : "All accounts";
-  const customPromptBody = String(p.id).startsWith("custom_") || p.isFallback ? (p.promptBody || p.what) : p.promptBody;
-  const isCustomPrompt = String(p.id).startsWith("custom_");
+  const isCreatedLayout = Boolean(showAction || p.isCreatedSample || String(p.id).startsWith("custom_"));
+  const customPromptBody = isCreatedLayout || p.isFallback ?
+  (p.promptBody || p.what) :
+  (p.promptBody || buildDetailViewPromptBody());
+  const isCustomPrompt = String(p.id).startsWith("custom_") || Boolean(p.isCreatedSample);
   const detailPath = showAction ? "/created/" + p.id : "/detail/" + p.id;
   const closeImproveModal = () => {
     setIsImproveOpen(false);
@@ -338,7 +412,7 @@ add a confidence level field to the JSON output?`);
     setIsImproveOpen(Boolean(showImprove));
   }, [showImprove, id]);
 
-  if (showAction && (isCustomPrompt || p.isFallback)) {
+  if (isCreatedLayout) {
     const body = customPromptBody || buildDefaultPromptBodyForCreateModal();
     return (
       <AppShell secondaryNav={<SecondaryNav current="library" />}>
@@ -567,11 +641,10 @@ function newDraftId() {
 }
 
 function BuilderPage({ id }) {
-  const template = findLibraryPrompt(id);
-  if (!template) return <NotFound back="/library" />;
+  const template = findLibraryPrompt(id) || FALLBACK_PROMPT_DETAIL;
   return (
     <CustomerPromptWizard
-      initialBaseId={id}
+      initialBaseId={template.id}
       initialStep={1}
       cancelPath="/library"
     />
@@ -623,3 +696,6 @@ function PromptApp() {
 
 window.PromptApp = PromptApp;
 window.buildDefaultPromptBodyForCreateModal = buildDefaultPromptBodyForCreateModal;
+window.resolvePromptForDetail = resolvePromptForDetail;
+window.FALLBACK_PROMPT_DETAIL = FALLBACK_PROMPT_DETAIL;
+window.FALLBACK_CREATED_PROMPT = FALLBACK_CREATED_PROMPT;
