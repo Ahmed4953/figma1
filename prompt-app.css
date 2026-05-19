@@ -683,3 +683,168 @@
   margin: 0;
 }
 
+/* ============== Customer prompt wizard ============== */
+.cpw {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 4px 8px 28px 8px;
+}
+.cpw-cancel { margin-bottom: 18px; }
+.cpw-head { margin-bottom: 22px; }
+.cpw-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: 1.3px;
+  text-transform: uppercase; color: var(--purple); margin-bottom: 6px;
+}
+.cpw-title {
+  font-size: 30px; font-weight: 700; line-height: 34px;
+  color: var(--text-2); margin: 0; letter-spacing: -0.3px;
+}
+.cpw-stepper {
+  list-style: none; margin: 0 0 24px 0; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  gap: 0; flex-wrap: wrap;
+}
+.cpw-step {
+  display: flex; align-items: center; gap: 8px;
+  position: relative; color: var(--text-muted);
+}
+.cpw-step-marker {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  background: var(--chip-bg); border: 1px solid var(--divider);
+  color: var(--text-muted); flex-shrink: 0;
+}
+.cpw-step-label { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.cpw-step-line {
+  width: 36px; height: 1px; background: var(--divider);
+  margin: 0 10px; flex-shrink: 0;
+}
+.cpw-step.is-active { color: var(--purple); }
+.cpw-step.is-active .cpw-step-marker {
+  background: var(--purple); border-color: var(--purple); color: white;
+}
+.cpw-step.is-done { color: rgb(0, 130, 70); }
+.cpw-step.is-done .cpw-step-marker {
+  background: rgb(225, 246, 232); border-color: rgb(189, 232, 204); color: rgb(0, 130, 70);
+}
+.cpw-card {
+  background: white; border: 1px solid var(--divider);
+  border-radius: 16px; box-shadow: var(--shadow-card);
+  padding: 28px 32px 24px 32px;
+}
+.cpw-panel-title {
+  font-size: 20px; font-weight: 700; color: var(--text-2);
+  margin: 0 0 8px 0; letter-spacing: -0.15px;
+}
+.cpw-panel-lead {
+  font-size: 14px; line-height: 21px; color: var(--text-3);
+  margin: 0 0 22px 0; max-width: 640px;
+}
+.cpw-blocks { display: flex; flex-direction: column; gap: 12px; margin-bottom: 22px; }
+.cpw-block {
+  border: 1px solid var(--divider); border-radius: 12px;
+  padding: 14px 16px 16px 16px; background: var(--card-inner);
+}
+.cpw-block-label {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 1.1px;
+  text-transform: uppercase; color: var(--text-muted); margin: 0 0 8px 0;
+}
+.cpw-block p {
+  margin: 0; font-size: 14px; line-height: 21px; color: var(--text-3);
+}
+.cpw-runtime {
+  display: flex; flex-wrap: wrap; gap: 16px 24px;
+}
+.cpw-runtime strong { color: var(--text-2); font-weight: 700; }
+.cpw-guide { margin-top: 4px; }
+.cpw-guide-head {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 1.1px;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;
+}
+.cpw-guide-table { border: 1px solid var(--divider); border-radius: 12px; overflow: hidden; }
+.cpw-guide-row {
+  display: grid; grid-template-columns: 160px 100px 1fr;
+  gap: 12px; align-items: center;
+  padding: 11px 16px; border-top: 1px solid var(--divider);
+  font-size: 13.5px; line-height: 19px;
+}
+.cpw-guide-row:first-child { border-top: 0; }
+.cpw-guide-row--head {
+  background: var(--card-inner);
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.8px;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.cpw-guide-row:not(.cpw-guide-row--head):nth-child(even) { background: rgba(243, 244, 248, 0.5); }
+.cpw-guide-name { font-weight: 600; color: var(--text-2); }
+.cpw-guide-desc { color: var(--text-3); }
+.cpw-tag {
+  display: inline-flex; align-items: center;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.2px;
+  padding: 3px 8px; border-radius: 6px;
+}
+.cpw-tag--locked {
+  background: var(--chip-bg); color: var(--text-muted);
+  border: 1px solid var(--divider);
+}
+.cpw-tag--editable {
+  background: var(--purple-50); color: var(--purple);
+  border: 1px solid var(--purple-100);
+}
+.cpw-base-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.cpw-base-card {
+  text-align: left; cursor: pointer;
+  border: 1px solid var(--divider); border-radius: 12px;
+  padding: 14px 16px; background: white;
+  display: flex; flex-direction: column; gap: 6px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.cpw-base-card:hover { border-color: var(--purple-mid); box-shadow: var(--shadow-card); }
+.cpw-base-card.is-selected {
+  border-color: var(--purple); background: var(--purple-50);
+  box-shadow: 0 0 0 3px var(--purple-100);
+}
+.cpw-base-cat {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.1px;
+  text-transform: uppercase; color: var(--purple);
+}
+.cpw-base-name { font-size: 16px; font-weight: 700; color: var(--text-2); }
+.cpw-base-desc { font-size: 13px; line-height: 18px; color: var(--text-3); }
+.cpw-base-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.cpw-fields { display: flex; flex-direction: column; gap: 14px; max-width: 520px; }
+.cpw-meta-summary {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; color: var(--text-3); margin-top: 4px;
+}
+.cpw-sections { display: flex; flex-direction: column; gap: 16px; }
+.cpw-section-field-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 6px;
+}
+.cpw-section-field .field-textarea { min-height: 100px; }
+.cpw-generate-summary {
+  margin-top: 16px; padding: 14px 16px;
+  background: var(--card-inner); border-radius: 12px;
+  border: 1px solid var(--divider);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.cpw-generate-row {
+  display: flex; justify-content: space-between; gap: 16px;
+  font-size: 13.5px; color: var(--text-3);
+}
+.cpw-generate-row strong { color: var(--text-2); font-weight: 600; text-align: right; }
+.cpw-foot {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 28px; padding-top: 20px;
+  border-top: 1px solid var(--divider);
+}
+@media (max-width: 720px) {
+  .cpw-card { padding: 20px 18px 18px 18px; }
+  .cpw-guide-row { grid-template-columns: 1fr; gap: 4px; }
+  .cpw-step-line { width: 20px; margin: 0 6px; }
+  .cpw-step-label { font-size: 12px; }
+}
+
