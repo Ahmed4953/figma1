@@ -158,6 +158,14 @@ function CpwSectionGuide({ rows }) {
 
 }
 
+function cpwFormatDisplayDate(date) {
+  const d = date instanceof Date ? date : new Date(date);
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return mm + "/" + dd + "/" + yyyy;
+}
+
 function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath }) {
   const lockedBaseId = initialBaseId || null;
   const startStep = typeof initialStep === "number" ? initialStep : 0;
@@ -168,9 +176,12 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath }) {
   const [step, setStep] = React.useState(startStep);
   const [baseId, setBaseId] = React.useState(
     () => lockedBaseId || baseOptions[0]?.id || "hybrid-search");
+  const [customerName, setCustomerName] = React.useState("");
   const [promptName, setPromptName] = React.useState("");
-  const [description, setDescription] = React.useState("");
-  const [accountId, setAccountId] = React.useState("mechatech");
+  const [ownerAuthor, setOwnerAuthor] = React.useState("");
+  const [createdDate, setCreatedDate] = React.useState(() => cpwFormatDisplayDate(new Date()));
+  const [metadataNotes, setMetadataNotes] = React.useState("");
+  const [accountId] = React.useState("mechatech");
   const editableSections = React.useMemo(() => cpwGetEditableSections(baseId), [baseId]);
   const [sectionValues, setSectionValues] = React.useState(() => {
     const init = {};
@@ -187,9 +198,10 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath }) {
   const account = CPW_ACCOUNTS.find((a) => a.id === accountId);
 
   React.useEffect(() => {
+    const defaultName = base.title + " – Custom";
     setPromptName((prev) => {
-      if (prev.trim()) return prev;
-      return "MechaTech — " + base.title + " v1";
+      if (!prev.trim() || prev.endsWith(" – Custom") || prev.endsWith(" — Custom")) return defaultName;
+      return prev;
     });
   }, [baseId, base.title]);
 
@@ -209,9 +221,11 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath }) {
 
   const savePrompt = () => {
     const now = new Date();
-    const title = promptName.trim() || base.title + " — Custom";
-    const desc = description.trim() || base.purpose;
+    const title = promptName.trim() || base.title + " – Custom";
+    const desc = metadataNotes.trim() ||
+    "Tuned for spare parts catalogue with extended attribute filters.";
     const id = "custom_" + Math.random().toString(36).slice(2, 9);
+    const accountLabel = account ? account.label : "the selected account";
 
     create({
       id,
@@ -220,13 +234,19 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath }) {
       title,
       desc,
       ver: "v1",
-      date: now.toLocaleDateString("en", { month: "short", day: "2-digit", year: "numeric" }),
+      date: createdDate.trim() || cpwFormatDisplayDate(now),
       what: desc,
-      where: "Used for " + base.cat.toLowerCase() + " workflows on " + (account ? account.label : "the selected account") + ".",
+      where: "Used for " + base.cat.toLowerCase() + " workflows on " + accountLabel + ".",
       impact: base.impact,
       promptBody,
       accountId,
       templateId: base.id,
+      templateTitle: base.title,
+      templateVersion: base.ver,
+      customerName: customerName.trim(),
+      ownerAuthor: ownerAuthor.trim(),
+      metadataNotes: metadataNotes.trim(),
+      status: "draft",
       sectionValues
     });
     go("/created/" + id);
@@ -302,34 +322,43 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath }) {
 
           {step === 2 &&
           <div className="cpw-panel">
-              <h2 className="cpw-panel-title">Metadata</h2>
-              <p className="cpw-panel-lead">Name your customer prompt and choose which account it applies to.</p>
-              <div className="cpw-fields">
+              <h2 className="cpw-panel-title">Customer metadata</h2>
+              <p className="cpw-panel-lead">Enter identifying information for this customer prompt.</p>
+              <div className="cpw-meta-grid">
+                <div className="field">
+                  <label className="field-label" htmlFor="cpw-customer-name">Customer name</label>
+                  <input id="cpw-customer-name" className="field-input" type="text"
+                  placeholder="e.g. RS Components"
+                  value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+                </div>
                 <div className="field">
                   <label className="field-label" htmlFor="cpw-prompt-name">Prompt name</label>
                   <input id="cpw-prompt-name" className="field-input" type="text"
-                  placeholder={"e.g. MechaTech — " + base.title + " v1"}
+                  placeholder={base.title + " – Custom"}
                   value={promptName} onChange={(e) => setPromptName(e.target.value)} />
                 </div>
                 <div className="field">
-                  <label className="field-label" htmlFor="cpw-prompt-desc">Description</label>
-                  <input id="cpw-prompt-desc" className="field-input" type="text"
-                  placeholder="Short summary for your team"
-                  value={description} onChange={(e) => setDescription(e.target.value)} />
+                  <label className="field-label" htmlFor="cpw-owner">Owner / author</label>
+                  <input id="cpw-owner" className="field-input" type="text"
+                  placeholder="Your name"
+                  value={ownerAuthor} onChange={(e) => setOwnerAuthor(e.target.value)} />
                 </div>
                 <div className="field">
-                  <label className="field-label" htmlFor="cpw-prompt-account">Account</label>
-                  <select id="cpw-prompt-account" className="field-select"
-                  value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-                    {CPW_ACCOUNTS.map((a) =>
-                    <option key={a.id} value={a.id}>{a.label}</option>
-                    )}
-                  </select>
+                  <label className="field-label" htmlFor="cpw-created-date">Created date</label>
+                  <input id="cpw-created-date" className="field-input" type="text"
+                  placeholder="MM/DD/YYYY"
+                  value={createdDate} onChange={(e) => setCreatedDate(e.target.value)} />
                 </div>
-                <div className="cpw-meta-summary">
-                  <span className="badge">Template</span>
-                  <span>{base.title} · {base.ver}</span>
-                </div>
+              </div>
+              <div className="field cpw-meta-notes">
+                <label className="field-label" htmlFor="cpw-notes">Notes</label>
+                <textarea id="cpw-notes" className="field-textarea"
+                placeholder="Optional context about this customization"
+                value={metadataNotes} onChange={(e) => setMetadataNotes(e.target.value)} />
+              </div>
+              <div className="cpw-meta-summary">
+                <span className="badge">Template</span>
+                <span>{base.title} · {base.ver}</span>
               </div>
             </div>}
 
