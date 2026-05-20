@@ -145,6 +145,7 @@ const DEFAULT_ROUTE_ARGS = {
   "cpw-metadata": "hybrid-search",
   "builder-metadata": "hybrid-search",
   "builder-sections": "hybrid-search",
+  "builder-prompt-sections": "hybrid-search",
   "builder-generate": "hybrid-search"
 };
 
@@ -154,6 +155,8 @@ const CPW_STEP_BY_ROUTE = {
   "builder-metadata": 2,
   "cpw-metadata": 2,
   "builder-sections": 3,
+  "builder-prompt-sections": 3,
+  "cpw-prompt-sections": 3,
   "builder-generate": 4
 };
 
@@ -161,7 +164,7 @@ const CPW_ROUTE_BY_STEP = [
   "request",
   "builder",
   "builder-metadata",
-  "builder-sections",
+  "builder-prompt-sections",
   "builder-generate"
 ];
 
