@@ -16,6 +16,14 @@
     html, body { margin: 0; padding: 0; background: rgb(221, 222, 231); min-height: 100vh; }
     #root { display: flex; min-height: 100vh; }
     #root > .pl { width: 100%; }
+    /* Builder.io / Figma capture — explicit colors (no CSS filter on SVGs) */
+    .pl-menu, .pl-bar { background: rgb(30, 31, 49) !important; }
+    .pl-sidebar {
+      background: linear-gradient(180deg, rgb(43, 44, 70) 17%, rgb(113, 20, 230) 100%) !important;
+    }
+    .pl-nav { color: rgb(255, 255, 255) !important; }
+    .pl-divider { color: rgb(151, 69, 255) !important; }
+    .pl-email { color: rgb(255, 255, 255) !important; }
   </style>
   <script>
     (function () {

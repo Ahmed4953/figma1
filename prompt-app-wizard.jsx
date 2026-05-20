@@ -28,30 +28,41 @@ const CPW_ACCOUNTS = [
   { id: "acme", label: "Acme Industries / acme_main" },
   { id: "northbay", label: "NorthBay Tools / northbay_prod" }];
 
-const CPW_EDITABLE_SECTIONS_DEFAULT = [
-  { key: "CUSTOMER_CONTEXT", title: "Customer Context",
-    placeholder: "MechaTech sells industrial pumps and replacement parts to maintenance teams across DACH. Customers usually upload phone photos of nameplates and ask for the matching spare part." },
-  { key: "TERMINOLOGY", title: "Domain Terminology",
-    placeholder: "MX-2400 = our flagship hydraulic pump series\nHSK = Hydraulic Service Kit\nViton = high-temperature elastomer used for seal variants" },
-  { key: "EXAMPLES", title: "Examples",
-    placeholder: "Input: \"shaft seal for MX-2400\"\nExpected: MX-2400-SEAL-04, MX-2400-SEAL-04A, PMP-HSK-MX2400" }];
+const CPW_EDIT_VARIABLES = [
+  {
+    key: "OCR_TEXT",
+    title: "OCR text",
+    defaultValue: "{0}",
+    hint: "Use {0} to keep this as a runtime placeholder."
+  },
+  {
+    key: "CATALOG_CONTEXT",
+    title: "Customer or catalog context",
+    hint: "Optional domain hints, for example automotive parts, workshop consumables, or furniture."
+  },
+  {
+    key: "ADDITIONAL_RULES",
+    title: "Additional rules",
+    hint: "Optional constraints appended at the end."
+  }
+];
+
+const CPW_EDITABLE_SECTIONS_DEFAULT = CPW_EDIT_VARIABLES;
 
 const CPW_EDITABLE_SECTIONS_BY_BASE = {
-  "hybrid-search": [
-    { key: "VISUAL_CLASSIFICATION", title: "Visual classification",
-      placeholder: "Define when an image signal is primary vs secondary for this account's catalogue." },
-    { key: "OCR_TEXT_CLASSIFICATION", title: "OCR text classification",
-      placeholder: "Rules for primary, secondary, or not-relevant OCR text on nameplates and labels." },
-    { key: "BM25_QUERY", title: "BM25 query construction",
-      placeholder: "Concise catalog query rules, token limits, and 1–2 worked examples." },
-    { key: "SPECIFICATION_EXTRACTION", title: "Specification extraction",
-      placeholder: "Fixed keys to extract (e.g. VIN, tire size, thread) and how to normalize them." },
-    { key: "CUSTOM_CONTEXT", title: "Custom context",
-      placeholder: "Optional customer-specific context, terminology, or extra constraints." }]
+  "hybrid-search": CPW_EDIT_VARIABLES
 };
 
 function cpwGetEditableSections(baseId) {
   return CPW_EDITABLE_SECTIONS_BY_BASE[baseId] || CPW_EDITABLE_SECTIONS_DEFAULT;
+}
+
+function cpwInitSectionValues(baseId) {
+  const init = {};
+  cpwGetEditableSections(baseId).forEach((s) => {
+    init[s.key] = s.defaultValue != null ? s.defaultValue : "";
+  });
+  return init;
 }
 
 const CPW_FALLBACK_BASE = {
@@ -186,12 +197,8 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionI
   const [metadataNotes, setMetadataNotes] = React.useState("");
   const [accountId] = React.useState("mechatech");
   const editableSections = React.useMemo(() => cpwGetEditableSections(baseId), [baseId]);
-  const [sectionValues, setSectionValues] = React.useState(() => {
-    const init = {};
-    cpwGetEditableSections(lockedBaseId || baseOptions[0]?.id || "hybrid-search")
-    .forEach((s) => { init[s.key] = ""; });
-    return init;
-  });
+  const [sectionValues, setSectionValues] = React.useState(() =>
+  cpwInitSectionValues(lockedBaseId || baseOptions[0]?.id || "hybrid-search"));
   const defaultBodyFn = typeof buildDefaultPromptBodyForCreateModal === "function" ?
   buildDefaultPromptBodyForCreateModal :
   () => "";
@@ -229,9 +236,7 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionI
   }, [baseId, base.title]);
 
   React.useEffect(() => {
-    const init = {};
-    editableSections.forEach((s) => { init[s.key] = sectionValues[s.key] || ""; });
-    setSectionValues(init);
+    setSectionValues(cpwInitSectionValues(baseId));
   }, [baseId]);
 
   const goBack = () => {
@@ -279,7 +284,7 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionI
 
   return (
     <AppShell secondaryNav={<SecondaryNav current="library" />}>
-      <div className="cpw">
+      <div className={"cpw" + (step === 3 ? " cpw--edit-sections" : "")}>
         <button type="button" className="det-back cpw-cancel" onClick={goBack}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
             <path d="M9 3L5 7L9 11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -294,7 +299,7 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionI
 
         <CpwStepper currentStep={step} />
 
-        <div className="cpw-card">
+        <div className={"cpw-card" + (step === 3 ? " cpw-card--edit-sections" : "")}>
           {step === 0 && !lockedBaseId &&
           <div className="cpw-panel">
               <h2 className="cpw-panel-title">Select base prompt</h2>
@@ -364,24 +369,28 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionI
             </div>}
 
           {step === 3 &&
-          <div className="cpw-panel">
-              <h2 className="cpw-panel-title">Edit sections</h2>
+          <div className="cpw-panel cpw-panel--edit-sections">
+              <h2 className="cpw-panel-title">Edit Sections</h2>
               <p className="cpw-panel-lead">
-                Add customer context, terminology, and examples. Locked sections stay on the reference template.
+                Customize the editable sections and fill in variables. Locked sections and the output
+                schema cannot be changed.
               </p>
-              <div className="cpw-sections">
-                {editableSections.map((s) =>
-                <div key={s.key} className="cpw-section-field">
-                    <div className="cpw-section-field-head">
+              <div className="cpw-variables">
+                <div className="cpw-variables-head">Variables</div>
+                <div className="cpw-sections">
+                  {editableSections.map((s) =>
+                  <div key={s.key}
+                  className={"cpw-section-field" + (s.key === "OCR_TEXT" ? " cpw-section-field--ocr" : "")}>
                       <label className="field-label" htmlFor={"cpw-sec-" + s.key}>{s.title}</label>
-                      <span className="cpw-tag cpw-tag--editable">Editable</span>
+                      <textarea id={"cpw-sec-" + s.key} className="field-textarea"
+                      rows={s.key === "OCR_TEXT" ? 1 : 2}
+                      value={sectionValues[s.key] || ""}
+                      onChange={(e) => setSectionValues((prev) => ({ ...prev, [s.key]: e.target.value }))} />
+                      {s.hint &&
+                      <p className="cpw-field-hint">{s.hint}</p>}
                     </div>
-                    <textarea id={"cpw-sec-" + s.key} className="field-textarea"
-                    placeholder={s.placeholder}
-                    value={sectionValues[s.key] || ""}
-                    onChange={(e) => setSectionValues((prev) => ({ ...prev, [s.key]: e.target.value }))} />
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>}
 
