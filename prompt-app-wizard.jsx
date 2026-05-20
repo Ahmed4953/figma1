@@ -5,7 +5,7 @@ const CPW_STEPS = [
   { id: "base", label: "Select Base" },
   { id: "review", label: "Review" },
   { id: "metadata", label: "Metadata" },
-  { id: "sections", label: "Edit Sections" },
+  { id: "sections", label: "Prompt Sections" },
   { id: "generate", label: "Generate" }];
 
 const CPW_SECTION_GUIDE = {
@@ -28,29 +28,38 @@ const CPW_ACCOUNTS = [
   { id: "acme", label: "Acme Industries / acme_main" },
   { id: "northbay", label: "NorthBay Tools / northbay_prod" }];
 
-const CPW_EDIT_VARIABLES = [
+const CPW_PROMPT_SECTIONS = [
   {
-    key: "OCR_TEXT",
-    title: "OCR text",
-    defaultValue: "{0}",
-    hint: "Use {0} to keep this as a runtime placeholder."
+    key: "VISUAL_CLASSIFICATION",
+    title: "Visual classification",
+    placeholder: "Define when an image signal is primary vs secondary for this account's catalogue."
   },
   {
-    key: "CATALOG_CONTEXT",
-    title: "Customer or catalog context",
-    hint: "Optional domain hints, for example automotive parts, workshop consumables, or furniture."
+    key: "OCR_TEXT_CLASSIFICATION",
+    title: "OCR text classification",
+    placeholder: "Rules for primary, secondary, or not-relevant OCR text on nameplates and labels."
   },
   {
-    key: "ADDITIONAL_RULES",
-    title: "Additional rules",
-    hint: "Optional constraints appended at the end."
+    key: "BM25_QUERY",
+    title: "BM25 query construction",
+    placeholder: "Concise catalog query rules, token limits, and 1–2 worked examples."
+  },
+  {
+    key: "SPECIFICATION_EXTRACTION",
+    title: "Specification extraction",
+    placeholder: "Fixed keys to extract (e.g. VIN, tire size, thread) and how to normalize them."
+  },
+  {
+    key: "CUSTOM_CONTEXT",
+    title: "Custom context",
+    placeholder: "Optional customer-specific context, terminology, or extra constraints."
   }
 ];
 
-const CPW_EDITABLE_SECTIONS_DEFAULT = CPW_EDIT_VARIABLES;
+const CPW_EDITABLE_SECTIONS_DEFAULT = CPW_PROMPT_SECTIONS;
 
 const CPW_EDITABLE_SECTIONS_BY_BASE = {
-  "hybrid-search": CPW_EDIT_VARIABLES
+  "hybrid-search": CPW_PROMPT_SECTIONS
 };
 
 function cpwGetEditableSections(baseId) {
@@ -280,11 +289,11 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionI
     go("/created/" + id);
   };
 
-  const nextLabels = ["Next: Review", "Next: Metadata", "Next: Edit Sections", "Next: Generate", "Save prompt"];
+  const nextLabels = ["Next: Review", "Next: Metadata", "Next: Prompt Sections", "Next: Generate", "Save prompt"];
 
   return (
     <AppShell secondaryNav={<SecondaryNav current="library" />}>
-      <div className={"cpw" + (step === 3 ? " cpw--edit-sections" : "")}>
+      <div className={"cpw" + (step === 3 ? " cpw--prompt-sections" : "")}>
         <button type="button" className="det-back cpw-cancel" onClick={goBack}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
             <path d="M9 3L5 7L9 11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -299,7 +308,7 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionI
 
         <CpwStepper currentStep={step} />
 
-        <div className={"cpw-card" + (step === 3 ? " cpw-card--edit-sections" : "")}>
+        <div className={"cpw-card" + (step === 3 ? " cpw-card--prompt-sections" : "")}>
           {step === 0 && !lockedBaseId &&
           <div className="cpw-panel">
               <h2 className="cpw-panel-title">Select base prompt</h2>
@@ -369,25 +378,22 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionI
             </div>}
 
           {step === 3 &&
-          <div className="cpw-panel cpw-panel--edit-sections">
-              <h2 className="cpw-panel-title">Edit Sections</h2>
+          <div className="cpw-panel cpw-panel--prompt-sections">
+              <h2 className="cpw-panel-title">Prompt sections</h2>
               <p className="cpw-panel-lead">
-                Customize the editable sections and fill in variables. Locked sections and the output
-                schema cannot be changed.
+                Customize each editable section for this customer prompt. Locked sections and the
+                output schema cannot be changed.
               </p>
-              <div className="cpw-variables">
-                <div className="cpw-variables-head">Variables</div>
+              <div className="cpw-prompt-sections-block">
+                <div className="cpw-prompt-sections-head">Prompt sections</div>
                 <div className="cpw-sections">
                   {editableSections.map((s) =>
-                  <div key={s.key}
-                  className={"cpw-section-field" + (s.key === "OCR_TEXT" ? " cpw-section-field--ocr" : "")}>
+                  <div key={s.key} className="cpw-section-field">
                       <label className="field-label" htmlFor={"cpw-sec-" + s.key}>{s.title}</label>
                       <textarea id={"cpw-sec-" + s.key} className="field-textarea"
-                      rows={s.key === "OCR_TEXT" ? 1 : 2}
+                      placeholder={s.placeholder}
                       value={sectionValues[s.key] || ""}
                       onChange={(e) => setSectionValues((prev) => ({ ...prev, [s.key]: e.target.value }))} />
-                      {s.hint &&
-                      <p className="cpw-field-hint">{s.hint}</p>}
                     </div>
                   )}
                 </div>
