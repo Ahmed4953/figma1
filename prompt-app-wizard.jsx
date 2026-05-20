@@ -245,34 +245,6 @@ You are given an image from the user. Your job is to classify the image and its 
   return fallback;
 }
 
-function cpwCountWords(text) {
-  const trimmed = String(text || "").trim();
-  if (!trimmed) return 0;
-  return trimmed.split(/\s+/).filter(Boolean).length;
-}
-
-function cpwEstimateTokens(text) {
-  return Math.max(1, Math.round(cpwCountWords(text) * 1.35));
-}
-
-function cpwDownloadTextFile(filename, content, mimeType) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
-}
-
-function CpwGenerateMetaItem({ label, value }) {
-  return (
-    <span className="cpw-generate-meta-item">
-      <span className="cpw-generate-meta-label">{label}:</span>{" "}
-      <span className="cpw-generate-meta-value">{value}</span>
-    </span>);
-}
-
 function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionId: sessionIdProp, syncUrl = true }) {
   const lockedBaseId = initialBaseId || null;
   const startStep = typeof initialStep === "number" ? initialStep : 0;
@@ -299,7 +271,6 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionI
   buildDefaultPromptBodyForCreateModal :
   () => "";
   const [promptBody, setPromptBody] = React.useState(defaultBodyFn);
-  const [copyDone, setCopyDone] = React.useState(false);
 
   const base = React.useMemo(() => cpwGetBasePreset(baseId), [baseId]);
   const account = CPW_ACCOUNTS.find((a) => a.id === accountId);
@@ -309,19 +280,10 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionI
     () => cpwAssembleGeneratedPrompt(baseId),
     [baseId]
   );
-  const promptStats = React.useMemo(() => ({
-    words: cpwCountWords(generatedPrompt),
-    tokens: cpwEstimateTokens(generatedPrompt)
-  }), [generatedPrompt]);
   const schemaJson = React.useMemo(
     () => JSON.stringify(outputSchema.schema, null, 2),
     [outputSchema]
   );
-  const customerDisplay = customerName.trim() || "—";
-  const exportBaseName = (promptName.trim() || base.title + "-custom")
-  .replace(/[^\w\-]+/g, "-")
-  .replace(/-+/g, "-")
-  .replace(/^-|-$/g, "") || "customer-prompt";
 
   const goToStep = React.useCallback((nextStep) => {
     setStep(nextStep);
@@ -357,42 +319,6 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionI
   React.useEffect(() => {
     if (step === 4) setPromptBody(generatedPrompt);
   }, [step, generatedPrompt]);
-
-  const handleCopyPrompt = async () => {
-    try {
-      await navigator.clipboard.writeText(generatedPrompt);
-      setCopyDone(true);
-      window.setTimeout(() => setCopyDone(false), 2000);
-    } catch {
-      setCopyDone(false);
-    }
-  };
-
-  const handleExportTxt = () => {
-    cpwDownloadTextFile(exportBaseName + ".txt", generatedPrompt, "text/plain;charset=utf-8");
-  };
-
-  const handleExportJson = () => {
-    const payload = {
-      customer: customerDisplay,
-      base: base.title,
-      schema: outputSchema.schemaId + " " + outputSchema.schemaVersion,
-      prompt: generatedPrompt,
-      outputSchema: outputSchema.schema,
-      sectionValues,
-      metadata: {
-        promptName: promptName.trim() || base.title + " – Custom",
-        ownerAuthor: ownerAuthor.trim(),
-        createdDate: createdDate.trim(),
-        notes: metadataNotes.trim()
-      }
-    };
-    cpwDownloadTextFile(
-      exportBaseName + ".json",
-      JSON.stringify(payload, null, 2),
-      "application/json;charset=utf-8"
-    );
-  };
 
   const goBack = () => {
     const minStep = lockedBaseId ? startStep : 0;
@@ -548,19 +474,6 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionI
 
           {step === 4 &&
           <div className="cpw-panel cpw-panel--generate">
-              <h2 className="cpw-panel-title">Generated prompt</h2>
-              <p className="cpw-panel-lead">
-                This is your final customer prompt. It is read-only. The output schema has been
-                injected automatically.
-              </p>
-              <div className="cpw-generate-meta-bar">
-                <CpwGenerateMetaItem label="Customer" value={customerDisplay} />
-                <CpwGenerateMetaItem label="Base" value={base.title} />
-                <CpwGenerateMetaItem label="Schema" value={outputSchema.schemaId + " " + outputSchema.schemaVersion} />
-                <CpwGenerateMetaItem label="Words" value={String(promptStats.words)} />
-                <CpwGenerateMetaItem label="Tokens" value={promptStats.tokens.toLocaleString()} />
-              </div>
-              <pre className="cpw-generate-body" aria-readonly="true">{generatedPrompt}</pre>
               <div className="cpw-generate-schema">
                 <div className="cpw-generate-schema-head">
                   <span className="cpw-generate-schema-lock" aria-hidden="true">
@@ -574,18 +487,6 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionI
                   </div>
                 </div>
                 <pre className="cpw-generate-schema-body">{schemaJson}</pre>
-              </div>
-              <div className="cpw-generate-actions">
-                <button type="button" className="btn btn--outline"
-                onClick={handleCopyPrompt}>
-                  {copyDone ? "Copied" : "Copy prompt"}
-                </button>
-                <button type="button" className="btn btn--outline" onClick={handleExportTxt}>
-                  Export TXT
-                </button>
-                <button type="button" className="btn btn--primary" onClick={handleExportJson}>
-                  Export JSON
-                </button>
               </div>
             </div>}
 

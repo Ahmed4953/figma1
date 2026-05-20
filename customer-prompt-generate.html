@@ -54,26 +54,6 @@
               <li class="cpw-step is-active"><span class="cpw-step-marker" aria-hidden="true">5</span><span class="cpw-step-label">Generate</span></li>
             </ol>
             <div class="cpw-card">
-              <h2 class="cpw-panel-title">Generated prompt</h2>
-              <p class="cpw-panel-lead">This is your final customer prompt. It is read-only. The output schema has been injected automatically.</p>
-              <div class="cpw-generate-meta-bar">
-                <span class="cpw-generate-meta-item"><span class="cpw-generate-meta-label">Customer:</span> <span class="cpw-generate-meta-value">—</span></span>
-                <span class="cpw-generate-meta-item"><span class="cpw-generate-meta-label">Base:</span> <span class="cpw-generate-meta-value">Hybrid Search</span></span>
-                <span class="cpw-generate-meta-item"><span class="cpw-generate-meta-label">Schema:</span> <span class="cpw-generate-meta-value">hybrid-ocr v1.0</span></span>
-                <span class="cpw-generate-meta-item"><span class="cpw-generate-meta-label">Words:</span> <span class="cpw-generate-meta-value">896</span></span>
-                <span class="cpw-generate-meta-item"><span class="cpw-generate-meta-label">Tokens:</span> <span class="cpw-generate-meta-value">1,210</span></span>
-              </div>
-              <pre class="cpw-generate-body"># TASK
-You are given an image from the user. Your job is to classify the image and its OCR text, build a BM25 search query, and extract fixed product specifications before retrieval.
-
-# OCR TEXT
-{OCR_TEXT}
-
-# PRIORITY RULES
-1. Determine whether the visual signal or the OCR text is primary for this request.
-2. Use visual dominance only when the image clearly carries more searchable signal than text.
-3. Build a concise BM25 query from the primary signal — never pass raw OCR verbatim if normalized tokens are available.
-4. Extract specification keys defined for this account before returning the final JSON payload.</pre>
               <div class="cpw-generate-schema">
                 <div class="cpw-generate-schema-head">
                   <span class="cpw-generate-schema-lock" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 5V3.5a2.5 2.5 0 1 1 5 0V5M2.5 5h7v5.5h-7z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg></span>
@@ -92,11 +72,6 @@ You are given an image from the user. Your job is to classify the image and its 
   },
   "required": ["visual_dominance", "ocr_relevant", "search_query_bm25"]
 }</pre>
-              </div>
-              <div class="cpw-generate-actions">
-                <button type="button" class="btn btn--outline">Copy prompt</button>
-                <button type="button" class="btn btn--outline">Export TXT</button>
-                <button type="button" class="btn btn--primary">Export JSON</button>
               </div>
             </div>
           </div>
