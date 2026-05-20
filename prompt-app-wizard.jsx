@@ -318,28 +318,6 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionI
 
           {step === 1 &&
           <div className="cpw-panel">
-              <h2 className="cpw-panel-title">Review base prompt</h2>
-              <p className="cpw-panel-lead">
-                This is the default prompt you're deriving from. Review its purpose and impact before proceeding.
-              </p>
-              <div className="cpw-blocks">
-                <section className="cpw-block">
-                  <h3 className="cpw-block-label">Purpose</h3>
-                  <p>{base.purpose}</p>
-                </section>
-                <section className="cpw-block">
-                  <h3 className="cpw-block-label">Impact</h3>
-                  <p>{base.impact}</p>
-                </section>
-                <section className="cpw-block">
-                  <h3 className="cpw-block-label">Runtime</h3>
-                  <p className="cpw-runtime">
-                    <span><strong>Model:</strong> {base.runtime.model}</span>
-                    <span><strong>Temperature:</strong> {base.runtime.temperature}</span>
-                    <span><strong>Tools:</strong> {base.runtime.tools}</span>
-                  </p>
-                </section>
-              </div>
               <CpwSectionGuide rows={base.sectionGuide} />
             </div>}
 
