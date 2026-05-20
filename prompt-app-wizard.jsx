@@ -186,6 +186,93 @@ function cpwFormatDisplayDate(date) {
   return mm + "/" + dd + "/" + yyyy;
 }
 
+const CPW_OUTPUT_SCHEMA_BY_BASE = {
+  "hybrid-search": {
+    schemaId: "hybrid-ocr",
+    schemaVersion: "v1.0",
+    schema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        visual_dominance: { type: "boolean" },
+        ocr_relevant: { type: "boolean" },
+        search_query_bm25: { type: "string" },
+        product_specifications: {
+          type: "object",
+          properties: {
+            vin_17: { type: "string" },
+            tire_size: { type: "string" }
+          }
+        }
+      },
+      required: ["visual_dominance", "ocr_relevant", "search_query_bm25"]
+    }
+  }
+};
+
+const CPW_DEFAULT_OUTPUT_SCHEMA = {
+  schemaId: "default",
+  schemaVersion: "v1.0",
+  schema: {
+    type: "object",
+    properties: {
+      results: { type: "array", items: { type: "object" } }
+    }
+  }
+};
+
+function cpwGetOutputSchema(baseId) {
+  return CPW_OUTPUT_SCHEMA_BY_BASE[baseId] || CPW_DEFAULT_OUTPUT_SCHEMA;
+}
+
+function cpwAssembleGeneratedPrompt(baseId) {
+  if (baseId === "hybrid-search") {
+    return `# TASK
+You are given an image from the user. Your job is to classify the image and its OCR text, build a BM25 search query, and extract fixed product specifications before retrieval.
+
+# OCR TEXT
+{OCR_TEXT}
+
+# PRIORITY RULES
+1. Determine whether the visual signal or the OCR text is primary for this request.
+2. Use visual dominance only when the image clearly carries more searchable signal than text.
+3. Build a concise BM25 query from the primary signal — never pass raw OCR verbatim if normalized tokens are available.
+4. Extract specification keys defined for this account before returning the final JSON payload.`;
+  }
+  const fallback = typeof buildDefaultPromptBodyForCreateModal === "function" ?
+  buildDefaultPromptBodyForCreateModal() :
+  "";
+  return fallback;
+}
+
+function cpwCountWords(text) {
+  const trimmed = String(text || "").trim();
+  if (!trimmed) return 0;
+  return trimmed.split(/\s+/).filter(Boolean).length;
+}
+
+function cpwEstimateTokens(text) {
+  return Math.max(1, Math.round(cpwCountWords(text) * 1.35));
+}
+
+function cpwDownloadTextFile(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function CpwGenerateMetaItem({ label, value }) {
+  return (
+    <span className="cpw-generate-meta-item">
+      <span className="cpw-generate-meta-label">{label}:</span>{" "}
+      <span className="cpw-generate-meta-value">{value}</span>
+    </span>);
+}
+
 function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionId: sessionIdProp, syncUrl = true }) {
   const lockedBaseId = initialBaseId || null;
   const startStep = typeof initialStep === "number" ? initialStep : 0;
@@ -212,10 +299,29 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionI
   buildDefaultPromptBodyForCreateModal :
   () => "";
   const [promptBody, setPromptBody] = React.useState(defaultBodyFn);
+  const [copyDone, setCopyDone] = React.useState(false);
 
   const base = React.useMemo(() => cpwGetBasePreset(baseId), [baseId]);
   const account = CPW_ACCOUNTS.find((a) => a.id === accountId);
   const sessionId = sessionIdProp || arg || lockedBaseId || baseId;
+  const outputSchema = React.useMemo(() => cpwGetOutputSchema(baseId), [baseId]);
+  const generatedPrompt = React.useMemo(
+    () => cpwAssembleGeneratedPrompt(baseId),
+    [baseId]
+  );
+  const promptStats = React.useMemo(() => ({
+    words: cpwCountWords(generatedPrompt),
+    tokens: cpwEstimateTokens(generatedPrompt)
+  }), [generatedPrompt]);
+  const schemaJson = React.useMemo(
+    () => JSON.stringify(outputSchema.schema, null, 2),
+    [outputSchema]
+  );
+  const customerDisplay = customerName.trim() || "—";
+  const exportBaseName = (promptName.trim() || base.title + "-custom")
+  .replace(/[^\w\-]+/g, "-")
+  .replace(/-+/g, "-")
+  .replace(/^-|-$/g, "") || "customer-prompt";
 
   const goToStep = React.useCallback((nextStep) => {
     setStep(nextStep);
@@ -247,6 +353,46 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionI
   React.useEffect(() => {
     setSectionValues(cpwInitSectionValues(baseId));
   }, [baseId]);
+
+  React.useEffect(() => {
+    if (step === 4) setPromptBody(generatedPrompt);
+  }, [step, generatedPrompt]);
+
+  const handleCopyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedPrompt);
+      setCopyDone(true);
+      window.setTimeout(() => setCopyDone(false), 2000);
+    } catch {
+      setCopyDone(false);
+    }
+  };
+
+  const handleExportTxt = () => {
+    cpwDownloadTextFile(exportBaseName + ".txt", generatedPrompt, "text/plain;charset=utf-8");
+  };
+
+  const handleExportJson = () => {
+    const payload = {
+      customer: customerDisplay,
+      base: base.title,
+      schema: outputSchema.schemaId + " " + outputSchema.schemaVersion,
+      prompt: generatedPrompt,
+      outputSchema: outputSchema.schema,
+      sectionValues,
+      metadata: {
+        promptName: promptName.trim() || base.title + " – Custom",
+        ownerAuthor: ownerAuthor.trim(),
+        createdDate: createdDate.trim(),
+        notes: metadataNotes.trim()
+      }
+    };
+    cpwDownloadTextFile(
+      exportBaseName + ".json",
+      JSON.stringify(payload, null, 2),
+      "application/json;charset=utf-8"
+    );
+  };
 
   const goBack = () => {
     const minStep = lockedBaseId ? startStep : 0;
@@ -293,7 +439,7 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionI
 
   return (
     <AppShell secondaryNav={<SecondaryNav current="library" />}>
-      <div className={"cpw" + (step === 3 ? " cpw--prompt-sections" : "")}>
+      <div className={"cpw" + (step === 3 ? " cpw--prompt-sections" : "") + (step === 4 ? " cpw--generate" : "")}>
         <button type="button" className="det-back cpw-cancel" onClick={goBack}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
             <path d="M9 3L5 7L9 11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -401,20 +547,45 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionI
             </div>}
 
           {step === 4 &&
-          <div className="cpw-panel">
-              <h2 className="cpw-panel-title">Generate prompt</h2>
+          <div className="cpw-panel cpw-panel--generate">
+              <h2 className="cpw-panel-title">Generated prompt</h2>
               <p className="cpw-panel-lead">
-                Review the assembled prompt body. You can edit it before saving to your library.
+                This is your final customer prompt. It is read-only. The output schema has been
+                injected automatically.
               </p>
-              <div className="field">
-                <label className="field-label" htmlFor="cpw-prompt-body">Prompt body</label>
-                <textarea id="cpw-prompt-body" className="field-textarea field-textarea--prompt-body"
-                value={promptBody} onChange={(e) => setPromptBody(e.target.value)} />
+              <div className="cpw-generate-meta-bar">
+                <CpwGenerateMetaItem label="Customer" value={customerDisplay} />
+                <CpwGenerateMetaItem label="Base" value={base.title} />
+                <CpwGenerateMetaItem label="Schema" value={outputSchema.schemaId + " " + outputSchema.schemaVersion} />
+                <CpwGenerateMetaItem label="Words" value={String(promptStats.words)} />
+                <CpwGenerateMetaItem label="Tokens" value={promptStats.tokens.toLocaleString()} />
               </div>
-              <div className="cpw-generate-summary">
-                <div className="cpw-generate-row"><span>Base</span><strong>{base.title}</strong></div>
-                <div className="cpw-generate-row"><span>Account</span><strong>{account ? account.label : accountId}</strong></div>
-                <div className="cpw-generate-row"><span>Name</span><strong>{promptName.trim() || "—"}</strong></div>
+              <pre className="cpw-generate-body" aria-readonly="true">{generatedPrompt}</pre>
+              <div className="cpw-generate-schema">
+                <div className="cpw-generate-schema-head">
+                  <span className="cpw-generate-schema-lock" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M3 5V3.5a2.5 2.5 0 1 1 5 0V5M2.5 5h7v5.5h-7z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                  <div className="cpw-generate-schema-titles">
+                    <span className="cpw-generate-schema-title">Locked output format</span>
+                    <span className="cpw-generate-schema-id">{outputSchema.schemaId}</span>
+                  </div>
+                </div>
+                <pre className="cpw-generate-schema-body">{schemaJson}</pre>
+              </div>
+              <div className="cpw-generate-actions">
+                <button type="button" className="btn btn--outline"
+                onClick={handleCopyPrompt}>
+                  {copyDone ? "Copied" : "Copy prompt"}
+                </button>
+                <button type="button" className="btn btn--outline" onClick={handleExportTxt}>
+                  Export TXT
+                </button>
+                <button type="button" className="btn btn--primary" onClick={handleExportJson}>
+                  Export JSON
+                </button>
               </div>
             </div>}
 
@@ -422,11 +593,17 @@ function CustomerPromptWizard({ initialBaseId, initialStep, cancelPath, sessionI
             {step > 0 &&
             <button type="button" className="btn btn--ghost" style={{ flex: "0 0 auto", minWidth: 100 }}
             onClick={goBack}>Back</button>}
+            {step === 4 ?
             <button type="button" className="btn btn--primary"
-            style={{ flex: "0 0 auto", minWidth: step === 4 ? 140 : 168, marginLeft: "auto" }}
-            onClick={step === 4 ? savePrompt : goNext}>
+            style={{ flex: "0 0 auto", minWidth: 160, marginLeft: "auto" }}
+            onClick={savePrompt}>
+              Save to library
+            </button> :
+            <button type="button" className="btn btn--primary"
+            style={{ flex: "0 0 auto", minWidth: 168, marginLeft: "auto" }}
+            onClick={goNext}>
               {nextLabels[step]}
-            </button>
+            </button>}
           </div>
         </div>
       </div>

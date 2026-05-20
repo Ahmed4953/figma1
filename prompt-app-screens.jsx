@@ -747,7 +747,7 @@ function PromptApp() {
   if (route === "improve") return <DetailPage id={arg} showAction showImprove />;
   if (route === "builder" || route === "builder-metadata" || route === "builder-sections" ||
   route === "builder-prompt-sections" || route === "builder-generate" || route === "cpw-metadata" ||
-  route === "cpw-prompt-sections") {
+  route === "cpw-prompt-sections" || route === "cpw-generate") {
     return <BuilderWizardPage key={route + "-" + (arg || "hybrid-search")} id={arg} />;
   }
   if (route === "compare") return <ComparePage id={arg} />;

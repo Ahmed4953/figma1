@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Generated customer prompt · nyris Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Customer prompt creation — generate step (Builder.io capture)" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Fira+Sans:wght@600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="prompts-screens.css" />
+  <link rel="stylesheet" href="prompt-app.css" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+  <style>
+    html, body { margin: 0; padding: 0; background: rgb(221, 222, 231); min-height: 100vh; }
+    #root { display: flex; min-height: 100vh; }
+    #root > .pl { width: 100%; }
+    .pl-menu, .pl-bar { background: rgb(30, 31, 49) !important; }
+    .pl-sidebar {
+      background: linear-gradient(180deg, rgb(43, 44, 70) 17%, rgb(113, 20, 230) 100%) !important;
+    }
+    .pl-nav { color: rgb(255, 255, 255) !important; }
+    .pl-divider { color: rgb(151, 69, 255) !important; }
+    .pl-email { color: rgb(255, 255, 255) !important; }
+  </style>
+  <script>
+    (function () {
+      var hash = window.location.hash || "";
+      if (!hash || hash === "#") {
+        window.location.hash = "#/builder-generate/hybrid-search";
+      }
+      window.__NYRIS_SHOW_PRERENDER__ = true;
+    })();
+  </script>
+</head>
+<body>
+  <div id="root">
+    <div id="nyris-prerender" class="pl nyris-prerender">
+      <div class="pl-shell">
+        <main class="pl-content">
+          <div class="cpw cpw--generate">
+            <p class="det-back cpw-cancel">Back</p>
+            <div class="cpw-head">
+              <div class="cpw-eyebrow">Customer prompt creation</div>
+              <h1 class="cpw-title">Hybrid Search – Custom</h1>
+            </div>
+            <ol class="cpw-stepper" aria-label="Creation progress">
+              <li class="cpw-step is-done"><span class="cpw-step-marker" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.2L4.8 8.5L9.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="cpw-step-label">Select Base</span><span class="cpw-step-line" aria-hidden="true"></span></li>
+              <li class="cpw-step is-done"><span class="cpw-step-marker" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.2L4.8 8.5L9.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="cpw-step-label">Review</span><span class="cpw-step-line" aria-hidden="true"></span></li>
+              <li class="cpw-step is-done"><span class="cpw-step-marker" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.2L4.8 8.5L9.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="cpw-step-label">Metadata</span><span class="cpw-step-line" aria-hidden="true"></span></li>
+              <li class="cpw-step is-done"><span class="cpw-step-marker" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.2L4.8 8.5L9.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="cpw-step-label">Prompt Sections</span><span class="cpw-step-line" aria-hidden="true"></span></li>
+              <li class="cpw-step is-active"><span class="cpw-step-marker" aria-hidden="true">5</span><span class="cpw-step-label">Generate</span></li>
+            </ol>
+            <div class="cpw-card">
+              <h2 class="cpw-panel-title">Generated prompt</h2>
+              <p class="cpw-panel-lead">This is your final customer prompt. It is read-only. The output schema has been injected automatically.</p>
+              <div class="cpw-generate-meta-bar">
+                <span class="cpw-generate-meta-item"><span class="cpw-generate-meta-label">Customer:</span> <span class="cpw-generate-meta-value">—</span></span>
+                <span class="cpw-generate-meta-item"><span class="cpw-generate-meta-label">Base:</span> <span class="cpw-generate-meta-value">Hybrid Search</span></span>
+                <span class="cpw-generate-meta-item"><span class="cpw-generate-meta-label">Schema:</span> <span class="cpw-generate-meta-value">hybrid-ocr v1.0</span></span>
+                <span class="cpw-generate-meta-item"><span class="cpw-generate-meta-label">Words:</span> <span class="cpw-generate-meta-value">896</span></span>
+                <span class="cpw-generate-meta-item"><span class="cpw-generate-meta-label">Tokens:</span> <span class="cpw-generate-meta-value">1,210</span></span>
+              </div>
+              <pre class="cpw-generate-body"># TASK
+You are given an image from the user. Your job is to classify the image and its OCR text, build a BM25 search query, and extract fixed product specifications before retrieval.
+
+# OCR TEXT
+{OCR_TEXT}
+
+# PRIORITY RULES
+1. Determine whether the visual signal or the OCR text is primary for this request.
+2. Use visual dominance only when the image clearly carries more searchable signal than text.
+3. Build a concise BM25 query from the primary signal — never pass raw OCR verbatim if normalized tokens are available.
+4. Extract specification keys defined for this account before returning the final JSON payload.</pre>
+              <div class="cpw-generate-schema">
+                <div class="cpw-generate-schema-head">
+                  <span class="cpw-generate-schema-lock" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 5V3.5a2.5 2.5 0 1 1 5 0V5M2.5 5h7v5.5h-7z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg></span>
+                  <div class="cpw-generate-schema-titles">
+                    <span class="cpw-generate-schema-title">Locked output format</span>
+                    <span class="cpw-generate-schema-id">hybrid-ocr</span>
+                  </div>
+                </div>
+                <pre class="cpw-generate-schema-body">{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "visual_dominance": { "type": "boolean" },
+    "ocr_relevant": { "type": "boolean" },
+    "search_query_bm25": { "type": "string" }
+  },
+  "required": ["visual_dominance", "ocr_relevant", "search_query_bm25"]
+}</pre>
+              </div>
+              <div class="cpw-generate-actions">
+                <button type="button" class="btn btn--outline">Copy prompt</button>
+                <button type="button" class="btn btn--outline">Export TXT</button>
+                <button type="button" class="btn btn--primary">Export JSON</button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+  <script type="text/babel" src="portal-chrome.jsx"></script>
+  <script type="text/babel" src="prompt-app-core.jsx"></script>
+  <script type="text/babel" src="prompt-app-screens.jsx"></script>
+  <script type="text/babel" src="prompt-app-wizard.jsx"></script>
+  <script type="text/babel" src="prompt-app-features.jsx"></script>
+  <script type="text/babel" data-presets="react">
+    ReactDOM.createRoot(document.getElementById('root')).render(<PromptApp />);
+  </script>
+</body>
+</html>
