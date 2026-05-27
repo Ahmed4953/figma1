@@ -38,7 +38,7 @@ const DEMO_REQUESTS = [
     timestamp: "27/09/21, 14:35",
     responseMs: "1805.1 ms",
     feedback: "Positive",
-    queryImage: REQ_IMG("query.jpg"),
+    queryImage: REQ_IMG("query-coupling.jpg"),
     results: buildResultItems(
       ["r1.jpg", "r2.jpg", "r3.jpg", "r4.jpg", "r5.jpg", "r6.jpg", "r7.jpg", null, "r8.jpg", "r9.jpg"],
       "MT-CPL"
