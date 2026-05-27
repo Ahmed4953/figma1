@@ -44,24 +44,55 @@ function PortalHeader(props) {
 
 function PortalSidebar(props) {
   const active = props.active || 'prompts';
-  const NavItem = (id, label, icon, hasChev) => (
-    <div className={"pl-nav" + (active === id ? " is-active" : "")} key={id}>
+  const onNavigate = props.onNavigate || (typeof window.go === 'function' ? window.go : null);
+  const navClass = (id) => "pl-nav" + (active === id ? " is-active" : "");
+  const navInner = (label, icon, hasChev) => (
+    <>
       <img src={"assets/icon-" + icon + ".svg"} alt="" />
       <span>{label}</span>
-      {hasChev && <span className="chev"></span>}
-    </div>
+      {hasChev ? <span className="chev"></span> : null}
+    </>
   );
+  const NavItem = (id, label, icon, hasChev, path) => {
+    const className = navClass(id);
+    if (path) {
+      const href = path.startsWith("#") ? path : "#" + path;
+      return (
+        <a
+          key={id}
+          href={href}
+          className={className}
+          onClick={(e) => {
+            e.preventDefault();
+            const target = path.startsWith("#") ? path : "#" + path;
+            if (onNavigate) {
+              onNavigate(target);
+            } else {
+              window.location.hash = target;
+            }
+          }}
+        >
+          {navInner(label, icon, hasChev)}
+        </a>
+      );
+    }
+    return (
+      <div key={id} className={className}>
+        {navInner(label, icon, hasChev)}
+      </div>
+    );
+  };
   return (
     <div className="pl-sidebar-wrap">
       <aside className="pl-sidebar">
         <div className="pl-nav-group">
-          {NavItem('dashboard', 'Dashboard', 'dashboard')}
+          {NavItem('dashboard', 'Dashboard', 'dashboard', false, '/requests')}
           <div className="pl-divider">Admin Hub</div>
           {NavItem('accounts', 'Accounts', 'accounts', true)}
           {NavItem('indexes', 'Indexes', 'indexes', true)}
-          {NavItem('prompts', 'Prompts', 'prompts')}
+          {NavItem('prompts', 'Prompts', 'prompts', false, '/library')}
           <div className="pl-divider">Catalogue</div>
-          {NavItem('requests', 'Requests', 'requests')}
+          {NavItem('requests', 'Requests', 'requests', false, '/requests')}
           {NavItem('items', 'Items', 'items')}
           <div className="pl-divider">3D &amp; Rendering</div>
           {NavItem('machines', 'Machines', 'machines', true)}

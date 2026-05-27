@@ -197,7 +197,13 @@ function useRoute() {
   return r;
 }
 function go(path) {
-  window.location.hash = path;
+  if (!path) return;
+  const hash = path.startsWith("#")
+    ? path
+    : "#" + (path.startsWith("/") ? path : "/" + path);
+  if (window.location.hash !== hash) {
+    window.location.hash = hash;
+  }
 }
 
 // ────────────────────────────────────────────────────────────────────

@@ -4,15 +4,16 @@
 // ──────────────────────────────
 // Shared chrome wrapper
 // ──────────────────────────────
-function AppShell({ children, secondaryNav }) {
+function AppShell({ children, secondaryNav, sidebarActive = "prompts", panelClassName }) {
+  const panelClass = panelClassName ? "pl-panel " + panelClassName : "pl-panel";
   return (
     <div className="pl">
       <PortalHeader />
       <div className="pl-shell">
-        <PortalSidebar active="prompts" />
+        <PortalSidebar active={sidebarActive} onNavigate={window.go} />
         <main className="pl-content">
           {secondaryNav}
-          <div className="pl-panel">{children}</div>
+          <div className={panelClass}>{children}</div>
         </main>
       </div>
     </div>);
@@ -741,6 +742,9 @@ function NotFound({ back }) {
 function PromptApp() {
   const { route, arg } = useRoute();
   if (route === "library") return <LibraryPage />;
+  if (route === "requests" && window.RequestsPage) {
+    return React.createElement(window.RequestsPage);
+  }
   if (route === "request") return <RequestPromptPage />;
   if (route === "detail") return <DetailPage id={arg} />;
   if (route === "created") return <DetailPage id={arg} showAction />;
@@ -757,6 +761,7 @@ function PromptApp() {
   return <LibraryPage />;
 }
 
+window.AppShell = AppShell;
 window.PromptApp = PromptApp;
 window.buildDefaultPromptBodyForCreateModal = buildDefaultPromptBodyForCreateModal;
 window.resolvePromptForDetail = resolvePromptForDetail;
