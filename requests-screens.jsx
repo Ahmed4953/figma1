@@ -785,7 +785,9 @@ function RequestDetailPage({ requestId }) {
   const [marking, setMarkingState] = React.useState(() => getMarking(requestId));
   const [cropData, setCropDataState] = React.useState(() => getCrop(requestId));
   const [toast, setToast] = React.useState(null);
-  const [cropModalOpen, setCropModalOpen] = React.useState(false);
+  const [cropModalOpen, setCropModalOpen] = React.useState(
+    () => !!window.__NYRIS_OPEN_CROP_MODAL__
+  );
   const [confirmRemoveOpen, setConfirmRemoveOpen] = React.useState(false);
 
   React.useEffect(() => {
