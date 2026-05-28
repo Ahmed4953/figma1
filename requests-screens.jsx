@@ -338,6 +338,20 @@ function IconCrop() {
   );
 }
 
+function IconTrash() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M3.5 5h9M6 5V3.5h4V5M6.5 8v3.5M9.5 8v3.5M4.5 5l.5 7.5h6l.5-7.5"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function ReqConfirmDialog({ title, message, confirmLabel, onConfirm, onCancel }) {
   return (
     <div className="req-modal-scrim" role="presentation" onClick={onCancel}>
@@ -564,9 +578,14 @@ function RequestImagePanel({ request, cropData, onCropClick, onClearCrop, cropRe
       <div className="req-image-actions">
         {cropRedirects ? (
           <p className="req-crop-away-hint">
-            Cropping is not available on this screen. Use the crop tool to adjust the request image.
+            Crop opens in a dedicated view. The original request image is never replaced — only a
+            cropped variant is saved for assignment.
           </p>
-        ) : null}
+        ) : (
+          <p className="req-crop-away-hint req-crop-away-hint--inline">
+            Original image is preserved. Only the cropped variant is used when you assign.
+          </p>
+        )}
         <button type="button" className="req-btn req-btn--crop" onClick={onCropClick}>
           <IconCrop />
           {cropRedirects
@@ -584,6 +603,101 @@ function RequestImagePanel({ request, cropData, onCropClick, onClearCrop, cropRe
         ) : null}
       </div>
     </div>
+  );
+}
+
+function RequestAssignmentCard({ marking, request, cropData, onRemove }) {
+  const assignedImage =
+    marking.assigned_request_image ||
+    getAssignmentImageUrl(request, cropData);
+  return (
+    <div className="req-assignment-card">
+      <div className="req-assignment-card-body">
+        <span className="req-correct-badge req-assignment-check">
+          <IconCheckFilled />
+        </span>
+        <div className="req-assignment-copy">
+          <p className="req-assignment-title">Assignment</p>
+          <p className="req-assignment-sku">
+            Correct item: <strong>{marking.correct_item_sku}</strong>
+          </p>
+          <p className="req-image-linked">
+            {marking.is_cropped
+              ? "Cropped variant assigned — original request image is unchanged"
+              : "Full request image assigned to this item"}
+          </p>
+        </div>
+      </div>
+      <div className="req-assignment-preview">
+        <figure className="req-assignment-figure">
+          <figcaption>
+            {marking.is_cropped ? "Cropped for assignment" : "Assigned image"}
+          </figcaption>
+          <div className="req-assignment-frame">
+            <img src={assignedImage} alt="Assigned request" />
+          </div>
+        </figure>
+        {marking.is_cropped ? (
+          <figure className="req-assignment-figure req-assignment-figure--original">
+            <figcaption>Original (preserved)</figcaption>
+            <div className="req-assignment-frame req-assignment-frame--muted">
+              <img src={request.queryImage} alt="Original request" />
+            </div>
+          </figure>
+        ) : null}
+      </div>
+      <button type="button" className="req-btn req-btn--remove" onClick={onRemove}>
+        Delete assignment
+      </button>
+    </div>
+  );
+}
+
+function RequestQaWorkflow({ request, cropData, marking, onCropClick, onViewResults }) {
+  const hasCrop = !!(cropData && cropData.croppedImageDataUrl);
+  const hasAssignment = !!marking;
+  return (
+    <section className="req-qa-workflow" aria-label="QA assignment workflow">
+      <h2 className="req-detail-section-title">QA assignment workflow</h2>
+      <p className="req-qa-workflow-intro">
+        Crop the request image before assigning, then mark the correct search result. The original
+        image is never modified.
+      </p>
+      <ol className="req-qa-steps">
+        <li className={"req-qa-step" + (hasCrop ? " req-qa-step--done" : "")}>
+          <span className="req-qa-step-num">1</span>
+          <div className="req-qa-step-body">
+            <strong>Crop request image</strong>
+            <span className="req-qa-step-tag">Optional</span>
+            <p>Create a cropped variant for assignment. The original stays in the log.</p>
+            <button type="button" className="req-btn req-btn--crop req-btn--sm" onClick={onCropClick}>
+              <IconCrop />
+              {hasCrop ? "Adjust crop" : "Crop image"}
+            </button>
+          </div>
+        </li>
+        <li className={"req-qa-step" + (hasAssignment ? " req-qa-step--done" : "")}>
+          <span className="req-qa-step-num">2</span>
+          <div className="req-qa-step-body">
+            <strong>Mark correct result</strong>
+            <p>
+              {hasCrop
+                ? "The cropped image will be linked to the item you select."
+                : "Select the result that matches this request, or search by SKU."}
+            </p>
+            {!hasAssignment ? (
+              <button type="button" className="req-btn req-btn--outline req-btn--sm" onClick={onViewResults}>
+                Go to results
+              </button>
+            ) : (
+              <span className="req-qa-step-done-label">
+                <IconCheckFilled /> Assigned to {marking.correct_item_sku}
+              </span>
+            )}
+          </div>
+        </li>
+      </ol>
+    </section>
   );
 }
 
@@ -783,6 +897,7 @@ function RequestRow({ request, marking, onOpen, onMarkingChange, markCorrectTarg
   const [selectedItemId, setSelectedItemId] = React.useState(() =>
     readMarkCorrectCaptureSelection(request)
   );
+  const [confirmRemoveOpen, setConfirmRemoveOpen] = React.useState(false);
   const isMarked = !!marking;
   const cropData = getCrop(request.id);
 
@@ -814,6 +929,16 @@ function RequestRow({ request, marking, onOpen, onMarkingChange, markCorrectTarg
       })
     );
     setSelectedItemId(null);
+    if (onMarkingChange) onMarkingChange();
+  };
+
+  const handleCropOpen = () => {
+    window.location.href = cropPageUrl(request.id);
+  };
+
+  const handleRemoveAssignment = () => {
+    removeMarking(request.id);
+    setConfirmRemoveOpen(false);
     if (onMarkingChange) onMarkingChange();
   };
 
@@ -856,6 +981,24 @@ function RequestRow({ request, marking, onOpen, onMarkingChange, markCorrectTarg
             ) : null}
           </div>
           <div className="req-row-actions">
+            <button
+              type="button"
+              className="req-icon-btn"
+              aria-label="Crop request image"
+              onClick={handleCropOpen}
+            >
+              <IconCrop />
+            </button>
+            {isMarked ? (
+              <button
+                type="button"
+                className="req-icon-btn req-icon-btn--danger"
+                aria-label="Delete assignment"
+                onClick={() => setConfirmRemoveOpen(true)}
+              >
+                <IconTrash />
+              </button>
+            ) : null}
             <button type="button" className="req-icon-btn" aria-label="Help">
               <IconHelp />
             </button>
@@ -917,6 +1060,15 @@ function RequestRow({ request, marking, onOpen, onMarkingChange, markCorrectTarg
           ) : null}
         </div>
       </div>
+      {confirmRemoveOpen ? (
+        <ReqConfirmDialog
+          title="Delete assignment"
+          message="Remove this request-to-item assignment? The original request image is not affected."
+          confirmLabel="Delete"
+          onConfirm={handleRemoveAssignment}
+          onCancel={() => setConfirmRemoveOpen(false)}
+        />
+      ) : null}
     </article>
   );
 }
@@ -1177,35 +1329,27 @@ function RequestDetailPage({ requestId }) {
             </div>
           </div>
 
+          <RequestQaWorkflow
+            request={request}
+            cropData={cropData}
+            marking={marking}
+            onCropClick={handleCropClick}
+            onViewResults={() => {
+              const el = document.getElementById("req-detail-results");
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+          />
+
           {marking ? (
-            <div className="req-assignment-card">
-              <div className="req-assignment-card-body">
-                <span className="req-correct-badge req-assignment-check">
-                  <IconCheckFilled />
-                </span>
-                <div>
-                  <p className="req-assignment-title">Assignment</p>
-                  <p className="req-assignment-sku">
-                    Correct item: <strong>{marking.correct_item_sku}</strong>
-                  </p>
-                  <p className="req-image-linked">
-                    {marking.is_cropped
-                      ? "Cropped request image assigned to this item"
-                      : "Request image assigned to this item"}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="req-btn req-btn--remove"
-                onClick={() => setConfirmRemoveOpen(true)}
-              >
-                Remove assignment
-              </button>
-            </div>
+            <RequestAssignmentCard
+              request={request}
+              marking={marking}
+              cropData={cropData}
+              onRemove={() => setConfirmRemoveOpen(true)}
+            />
           ) : null}
 
-          <div className="req-detail-results">
+          <div className="req-detail-results" id="req-detail-results">
             <h2 className="req-detail-section-title">Search results</h2>
             <p className="req-detail-hint">Mark the result that was actually correct for this request.</p>
             <div className="req-results-grid">
@@ -1257,9 +1401,9 @@ function RequestDetailPage({ requestId }) {
       ) : null}
       {confirmRemoveOpen ? (
         <ReqConfirmDialog
-          title="Remove assignment"
-          message="Are you sure you want to remove this assignment?"
-          confirmLabel="Remove"
+          title="Delete assignment"
+          message="Remove this request-to-item assignment? The original request image and crop variant are not deleted from the log."
+          confirmLabel="Delete"
           onConfirm={handleRemoveAssignment}
           onCancel={() => setConfirmRemoveOpen(false)}
         />

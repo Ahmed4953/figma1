@@ -2149,23 +2149,156 @@
   color: var(--purple);
   background: var(--purple-50);
 }
+.req-btn--sm {
+  height: 34px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+.req-icon-btn--danger:hover {
+  color: rgb(200, 60, 60);
+  background: rgb(255, 244, 244);
+}
+.req-qa-workflow {
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--divider);
+}
+.req-qa-workflow-intro {
+  margin: 0 0 16px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-3);
+  max-width: 720px;
+}
+.req-qa-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.req-qa-step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--divider);
+  background: var(--card-inner);
+}
+.req-qa-step--done {
+  border-color: rgb(189, 232, 204);
+  background: rgb(248, 252, 249);
+}
+.req-qa-step-num {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: white;
+  border: 1px solid rgb(221, 222, 231);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+.req-qa-step--done .req-qa-step-num {
+  background: rgb(225, 246, 232);
+  border-color: rgb(0, 192, 112);
+  color: rgb(0, 110, 72);
+}
+.req-qa-step-body {
+  flex: 1;
+  min-width: 0;
+}
+.req-qa-step-body strong {
+  font-size: 14px;
+  color: var(--text-1);
+}
+.req-qa-step-tag {
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.req-qa-step-body p {
+  margin: 6px 0 10px 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-3);
+}
+.req-qa-step-done-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgb(0, 110, 72);
+}
+.req-crop-away-hint--inline {
+  flex: 1 1 100%;
+}
 
 .req-assignment-card {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0;
   margin: 0 22px 16px;
-  padding: 14px 16px;
+  padding: 14px 16px 18px;
   border-radius: 10px;
   border: 2px solid rgb(0, 192, 112);
   background: rgb(240, 252, 246);
 }
 .req-assignment-card-body {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 14px;
+}
+.req-assignment-copy {
+  flex: 1;
+  min-width: 0;
+}
+.req-assignment-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 12px 0 14px 42px;
+}
+.req-assignment-figure {
+  margin: 0;
+}
+.req-assignment-figure figcaption {
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.req-assignment-frame {
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgb(221, 222, 231);
+  background: white;
+}
+.req-assignment-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.req-assignment-frame--muted {
+  opacity: 0.85;
+}
+.req-assignment-card .req-btn--remove {
+  align-self: flex-start;
+  margin-left: 42px;
 }
 .req-assignment-check { position: static; filter: none; }
 .req-assignment-title {
