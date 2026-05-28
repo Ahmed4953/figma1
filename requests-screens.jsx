@@ -538,7 +538,7 @@ function CropModal({ imageUrl, initialRect, onApply, onCancel }) {
   );
 }
 
-function RequestImagePanel({ request, cropData, onCropClick, onClearCrop }) {
+function RequestImagePanel({ request, cropData, onCropClick, onClearCrop, cropRedirects }) {
   const hasCrop = !!(cropData && cropData.croppedImageDataUrl);
   return (
     <div className="req-image-panel">
@@ -562,9 +562,20 @@ function RequestImagePanel({ request, cropData, onCropClick, onClearCrop }) {
         ) : null}
       </div>
       <div className="req-image-actions">
+        {cropRedirects ? (
+          <p className="req-crop-away-hint">
+            Cropping is not available on this screen. Use the crop tool to adjust the request image.
+          </p>
+        ) : null}
         <button type="button" className="req-btn req-btn--crop" onClick={onCropClick}>
           <IconCrop />
-          {hasCrop ? "Re-crop Image" : "Crop Image"}
+          {cropRedirects
+            ? hasCrop
+              ? "Open crop tool"
+              : "Crop image"
+            : hasCrop
+              ? "Re-crop Image"
+              : "Crop Image"}
         </button>
         {hasCrop ? (
           <button type="button" className="req-btn req-btn--crop-clear" onClick={onClearCrop}>
@@ -628,6 +639,37 @@ function markCorrectHashPath(requestId, resultId) {
 function markCorrectPageUrl(requestId, resultId) {
   const base = window.MARK_CORRECT_CAPTURE_URL || "requests-mark-correct.html";
   return base + "#" + markCorrectHashPath(requestId, resultId);
+}
+
+const CROP_CAPTURE_REQUEST_ID = "req-demo-1";
+
+function readCropFromHash() {
+  const parts = (window.location.hash || "").replace(/^#/, "").split("/").filter(Boolean);
+  if (parts[0] !== "requests" || parts[1] !== "crop") return null;
+  return { requestId: parts[2] || null };
+}
+
+function cropHashPath(requestId) {
+  return "/requests/crop/" + requestId;
+}
+
+function cropPageUrl(requestId) {
+  const base = window.REQUEST_CROP_CAPTURE_URL || "requests-crop.html";
+  return base + "#" + cropHashPath(requestId);
+}
+
+function isCropCapturePage() {
+  if (window.__NYRIS_OPEN_CROP_MODAL__) return true;
+  if (/requests-crop\.html/i.test(window.location.pathname)) return true;
+  return !!readCropFromHash()?.requestId;
+}
+
+function requestDetailUrl(requestId) {
+  if (/requests-crop\.html/i.test(window.location.pathname)) {
+    const origin = window.location.href.split(/requests-crop\.html/i)[0];
+    return origin + "#/requests/" + requestId;
+  }
+  return "#/requests/" + requestId;
 }
 
 function readMarkCorrectCaptureSelection(request) {
@@ -957,18 +999,49 @@ function AlternateItemSearch({ request, marking, onMarkExternal }) {
 
 function RequestDetailPage({ requestId }) {
   const request = findRequest(requestId);
+  const cropCapture = isCropCapturePage();
   const [marking, setMarkingState] = React.useState(() => getMarking(requestId));
   const [cropData, setCropDataState] = React.useState(() => getCrop(requestId));
   const [toast, setToast] = React.useState(null);
-  const [cropModalOpen, setCropModalOpen] = React.useState(
-    () => !!window.__NYRIS_OPEN_CROP_MODAL__
-  );
+  const [cropModalOpen, setCropModalOpen] = React.useState(() => cropCapture);
   const [confirmRemoveOpen, setConfirmRemoveOpen] = React.useState(false);
 
   React.useEffect(() => {
     setMarkingState(getMarking(requestId));
     setCropDataState(getCrop(requestId));
   }, [requestId]);
+
+  React.useEffect(() => {
+    if (cropCapture) {
+      setCropModalOpen(true);
+      if (typeof window.go === "function") {
+        window.go(cropHashPath(requestId));
+      }
+    }
+  }, [cropCapture, requestId]);
+
+  const handleCropClick = () => {
+    if (cropCapture) {
+      setCropModalOpen(true);
+      if (typeof window.go === "function") {
+        window.go(cropHashPath(requestId));
+      }
+      return;
+    }
+    window.location.href = cropPageUrl(requestId);
+  };
+
+  const leaveCropView = () => {
+    setCropModalOpen(false);
+    const target = requestDetailUrl(requestId);
+    if (/requests-crop\.html/i.test(window.location.pathname)) {
+      window.location.href = target;
+      return;
+    }
+    if (typeof window.go === "function") {
+      window.go("/requests/" + requestId);
+    }
+  };
 
   const persistMark = (payload) => {
     setMarking(requestId, payload);
@@ -1011,7 +1084,6 @@ function RequestDetailPage({ requestId }) {
   };
 
   const handleCropApply = (payload) => {
-    setCropModalOpen(false);
     if (!payload) {
       setToast("Could not crop image");
       return;
@@ -1019,6 +1091,11 @@ function RequestDetailPage({ requestId }) {
     setCrop(requestId, payload);
     setCropDataState(payload);
     if (marking) refreshMarkingWithCrop(marking);
+    if (cropCapture) {
+      leaveCropView();
+      return;
+    }
+    setCropModalOpen(false);
     setToast("Image cropped for assignment");
   };
 
@@ -1085,7 +1162,8 @@ function RequestDetailPage({ requestId }) {
             <RequestImagePanel
               request={request}
               cropData={cropData}
-              onCropClick={() => setCropModalOpen(true)}
+              cropRedirects={!cropCapture}
+              onCropClick={handleCropClick}
               onClearCrop={handleClearCrop}
             />
             <div className="req-detail-meta">
@@ -1169,12 +1247,12 @@ function RequestDetailPage({ requestId }) {
           </div>
         </div>
       </div>
-      {cropModalOpen ? (
+      {cropModalOpen && cropCapture ? (
         <CropModal
           imageUrl={request.queryImage}
           initialRect={cropData ? cropData.cropRect : defaultCropRect()}
           onApply={handleCropApply}
-          onCancel={() => setCropModalOpen(false)}
+          onCancel={leaveCropView}
         />
       ) : null}
       {confirmRemoveOpen ? (
@@ -1400,16 +1478,24 @@ function RequestsListPage({ captureMarkCorrect }) {
 
 function RequestsPage() {
   const route = window.useRoute ? window.useRoute() : { route: "requests", arg: null };
+  const cropFromHash = readCropFromHash();
+  if (cropFromHash && cropFromHash.requestId) {
+    return <RequestDetailPage requestId={cropFromHash.requestId} />;
+  }
   const markFromHash = readMarkCorrectFromHash();
   const captureMarkCorrect =
     !!markFromHash || route.arg === "mark-correct" || isMarkCorrectCaptureActive();
-  if (route.arg && route.route === "requests" && !captureMarkCorrect) {
+  if (route.arg && route.route === "requests" && !captureMarkCorrect && route.arg !== "crop") {
     return <RequestDetailPage requestId={route.arg} />;
   }
   return <RequestsListPage captureMarkCorrect={captureMarkCorrect} />;
 }
 
 window.RequestsPage = RequestsPage;
+window.REQUEST_CROP_CAPTURE_URL = "requests-crop.html";
+window.REQUEST_CROP_CAPTURE_HASH = "#/requests/crop/" + CROP_CAPTURE_REQUEST_ID;
+window.readCropFromHash = readCropFromHash;
+window.cropPageUrl = cropPageUrl;
 window.MARK_CORRECT_CAPTURE_URL = "requests-mark-correct.html";
 window.MARK_CORRECT_CAPTURE_HASH =
   "#/requests/mark-correct/" + MARK_CORRECT_CAPTURE_REQUEST_ID + "/MT-CPL-002";

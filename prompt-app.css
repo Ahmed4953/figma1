@@ -2114,7 +2114,16 @@
 .req-image-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
+}
+.req-crop-away-hint {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--text-3);
 }
 .req-btn--crop {
   background: var(--purple);
