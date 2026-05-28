@@ -781,27 +781,74 @@ function readCropFromHash() {
   return { requestId: parts[2] || null };
 }
 
+function readCropFromPathname() {
+  const m = window.location.pathname.match(/\/requests\/crop\/([^/]+)\/?$/i);
+  if (!m) return null;
+  return { requestId: decodeURIComponent(m[1]) };
+}
+
+function readCropTarget() {
+  return readCropFromHash() || readCropFromPathname();
+}
+
 function cropHashPath(requestId) {
   return "/requests/crop/" + requestId;
 }
 
-function cropPageUrl(requestId) {
-  const base = window.REQUEST_CROP_CAPTURE_URL || "requests-crop.html";
-  return base + "#" + cropHashPath(requestId);
+function isCropCaptureHtmlPage() {
+  if (window.__NYRIS_OPEN_CROP_MODAL__) return true;
+  if (/requests-crop\.html/i.test(window.location.pathname)) return true;
+  return !!readCropFromPathname()?.requestId;
 }
 
 function isCropCapturePage() {
-  if (window.__NYRIS_OPEN_CROP_MODAL__) return true;
-  if (/requests-crop\.html/i.test(window.location.pathname)) return true;
-  return !!readCropFromHash()?.requestId;
+  return isCropCaptureHtmlPage();
+}
+
+function cropPageUrl(requestId) {
+  const custom = window.REQUEST_CROP_CAPTURE_URL;
+  if (custom) {
+    if (custom.includes("{id}")) {
+      return custom.replace(/\{id\}/g, encodeURIComponent(requestId));
+    }
+    if (custom.includes("#")) return custom;
+    return custom + "#" + cropHashPath(requestId);
+  }
+  if (window.REQUEST_CROP_USE_CLEAN_URL !== false) {
+    return "/requests/crop/" + encodeURIComponent(requestId);
+  }
+  return "requests-crop.html#" + cropHashPath(requestId);
+}
+
+function cropPageAbsoluteUrl(requestId) {
+  return new URL(cropPageUrl(requestId), window.location.origin).href;
+}
+
+function appIndexUrl(hashPath) {
+  const hash = hashPath.startsWith("#") ? hashPath : "#" + (hashPath.startsWith("/") ? hashPath : "/" + hashPath);
+  if (!isCropCaptureHtmlPage()) return hash;
+  const path = window.location.pathname;
+  if (/requests-crop\.html/i.test(path)) {
+    const dir = path.replace(/requests-crop\.html/i, "");
+    return (dir || "/") + "index.html" + hash;
+  }
+  return "/index.html" + hash;
+}
+
+function navigateToMainApp(hashPath) {
+  const target = appIndexUrl(hashPath);
+  if (isCropCaptureHtmlPage()) {
+    window.location.href = new URL(target, window.location.origin).href;
+    return;
+  }
+  if (typeof window.go === "function") {
+    const path = hashPath.startsWith("#") ? hashPath.slice(1) : hashPath;
+    window.go(path.startsWith("/") ? path : "/" + path);
+  }
 }
 
 function requestDetailUrl(requestId) {
-  if (/requests-crop\.html/i.test(window.location.pathname)) {
-    const origin = window.location.href.split(/requests-crop\.html/i)[0];
-    return origin + "#/requests/" + requestId;
-  }
-  return "#/requests/" + requestId;
+  return appIndexUrl("/requests/" + requestId);
 }
 
 function readMarkCorrectCaptureSelection(request) {
@@ -1211,9 +1258,8 @@ function RequestDetailPage({ requestId }) {
 
   const leaveCropView = () => {
     setCropModalOpen(false);
-    const target = requestDetailUrl(requestId);
-    if (/requests-crop\.html/i.test(window.location.pathname)) {
-      window.location.href = target;
+    if (cropCapture) {
+      navigateToMainApp("/requests/" + requestId);
       return;
     }
     if (typeof window.go === "function") {
@@ -1327,7 +1373,13 @@ function RequestDetailPage({ requestId }) {
   return (
     <Shell sidebarActive="requests" panelClassName="pl-panel--requests">
       <div className="req-page req-page--detail">
-        <button type="button" className="det-back" onClick={() => window.go("/requests")}>
+        <button
+          type="button"
+          className="det-back"
+          onClick={() =>
+            cropCapture ? navigateToMainApp("/requests") : window.go("/requests")
+          }
+        >
           ← Back to requests
         </button>
         <div className="req-detail-head">
@@ -1649,10 +1701,31 @@ function RequestsListPage({ captureMarkCorrect }) {
 
 function RequestsPage() {
   const route = window.useRoute ? window.useRoute() : { route: "requests", arg: null };
-  const cropFromHash = readCropFromHash();
-  if (cropFromHash && cropFromHash.requestId) {
-    return <RequestDetailPage requestId={cropFromHash.requestId} />;
+  const cropTarget = readCropTarget();
+  const onCropCapturePage = isCropCaptureHtmlPage();
+
+  React.useEffect(() => {
+    if (cropTarget?.requestId && !onCropCapturePage) {
+      window.location.replace(cropPageUrl(cropTarget.requestId));
+    }
+  }, [onCropCapturePage, cropTarget?.requestId]);
+
+  if (cropTarget?.requestId && !onCropCapturePage) {
+    const Shell = window.AppShell;
+    if (!Shell) return null;
+    return (
+      <Shell sidebarActive="requests" panelClassName="pl-panel--requests">
+        <div className="req-page">
+          <p className="pl-subtitle">Opening crop tool…</p>
+        </div>
+      </Shell>
+    );
   }
+
+  if (cropTarget?.requestId && onCropCapturePage) {
+    return <RequestDetailPage requestId={cropTarget.requestId} />;
+  }
+
   const markFromHash = readMarkCorrectFromHash();
   const captureMarkCorrect =
     !!markFromHash || route.arg === "mark-correct" || isMarkCorrectCaptureActive();
@@ -1663,10 +1736,16 @@ function RequestsPage() {
 }
 
 window.RequestsPage = RequestsPage;
-window.REQUEST_CROP_CAPTURE_URL = "requests-crop.html";
+window.REQUEST_CROP_USE_CLEAN_URL = true;
+window.REQUEST_CROP_CAPTURE_URL = "/requests/crop/" + CROP_CAPTURE_REQUEST_ID;
 window.REQUEST_CROP_CAPTURE_HASH = "#/requests/crop/" + CROP_CAPTURE_REQUEST_ID;
+window.REQUEST_CROP_CAPTURE_ABSOLUTE_URL = cropPageAbsoluteUrl(CROP_CAPTURE_REQUEST_ID);
 window.readCropFromHash = readCropFromHash;
+window.readCropTarget = readCropTarget;
 window.cropPageUrl = cropPageUrl;
+window.cropPageAbsoluteUrl = cropPageAbsoluteUrl;
+window.isCropCaptureHtmlPage = isCropCaptureHtmlPage;
+window.navigateToMainApp = navigateToMainApp;
 window.MARK_CORRECT_CAPTURE_URL = "requests-mark-correct.html";
 window.MARK_CORRECT_CAPTURE_HASH =
   "#/requests/mark-correct/" + MARK_CORRECT_CAPTURE_REQUEST_ID + "/MT-CPL-002";

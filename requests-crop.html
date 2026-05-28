@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Requests — crop image · nyris Portal</title>
+  <title>Requests — crop and assign · nyris Portal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Requests detail — crop image modal (Builder.io capture)" />
+  <meta name="description" content="Dedicated crop-and-assign page for Builder.io capture (separate from main app URL)" />
+  <!-- Builder.io / Vercel capture URL: /requests/crop/req-demo-1 (also requests-crop.html#/requests/crop/req-demo-1) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Fira+Sans:wght@600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet" />
@@ -37,7 +38,11 @@
     (function () {
       window.__NYRIS_SHOW_PRERENDER__ = true;
       window.__NYRIS_OPEN_CROP_MODAL__ = true;
-      window.location.hash = "#/requests/crop/req-demo-1";
+      window.REQUEST_CROP_USE_CLEAN_URL = true;
+      var pathMatch = location.pathname.match(/\/requests\/crop\/([^/]+)\/?$/i);
+      var requestId = (pathMatch && pathMatch[1]) || "req-demo-1";
+      var wantHash = "#/requests/crop/" + requestId;
+      if (location.hash !== wantHash) location.hash = wantHash;
     })();
   </script>
 </head>

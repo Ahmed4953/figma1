@@ -3,6 +3,12 @@
   "name": "nyris-portal",
   "buildCommand": "",
   "outputDirectory": ".",
+  "rewrites": [
+    {
+      "source": "/requests/crop/:requestId",
+      "destination": "/requests-crop.html"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

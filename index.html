@@ -29,6 +29,12 @@
     (function () {
       var hash = window.location.hash || "";
       window.__NYRIS_SHOW_PRERENDER__ = /#\/(created|improve)(\/|$)/.test(hash);
+      if (/requests-crop\.html/i.test(location.pathname)) return;
+      if (/\/requests\/crop\//i.test(location.pathname)) return;
+      var crop = hash.match(/^#\/requests\/crop\/([^/?#]+)/);
+      if (crop) {
+        location.replace("/requests/crop/" + encodeURIComponent(crop[1]));
+      }
     })();
   </script>
 </head>
