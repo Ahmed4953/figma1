@@ -257,10 +257,11 @@ window.cpwPathForStep = cpwPathForStep;
 // Status model
 // ────────────────────────────────────────────────────────────────────
 const STATUSES = {
-  draft:    { id: "draft",    label: "Draft",     tone: "grey"   },
-  review:   { id: "review",   label: "In Review", tone: "yellow" },
-  approved: { id: "approved", label: "Approved",  tone: "green"  },
-  live:     { id: "live",     label: "Live",      tone: "purple" },
+  draft:     { id: "draft",     label: "Draft",     tone: "yellow" },
+  published: { id: "published", label: "Published", tone: "green"  },
+  review:    { id: "review",    label: "In Review", tone: "yellow" },
+  approved:  { id: "approved",  label: "Approved",  tone: "green"  },
+  live:      { id: "live",      label: "Live",      tone: "purple" },
 };
 
 function StatusBadge({ status, size }) {

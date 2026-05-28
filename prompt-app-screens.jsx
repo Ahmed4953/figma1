@@ -202,16 +202,30 @@ function findLibraryPrompt(id) {
 }
 
 function useLibraryPrompts() {
-  const [prompts, setPrompts] = React.useState(loadCustomPrompts);
-  const refresh = React.useCallback(() => setPrompts(loadCustomPrompts()), []);
+  const [custom, setCustom] = React.useState(loadCustomPrompts);
+  const refresh = React.useCallback(() => setCustom(loadCustomPrompts()), []);
+
+  const prompts = React.useMemo(() => {
+    const catalog = typeof window.PROMPTS !== "undefined" ? window.PROMPTS : [];
+    const byId = new Map();
+    catalog.forEach((p) => byId.set(p.id, p));
+    custom.forEach((p) => byId.set(p.id, p));
+    return Array.from(byId.values());
+  }, [custom]);
 
   React.useEffect(() => {
-    const onStorage = (e) => { if (e.key === CUSTOM_PROMPTS_KEY) refresh(); };
+    const onStorage = (e) => {
+      if (e.key === CUSTOM_PROMPTS_KEY || e.key === window.PROMPT_VERSIONS_KEY) refresh();
+    };
+    const onCustom = () => refresh();
+    const onVersions = () => refresh();
     window.addEventListener("storage", onStorage);
-    window.addEventListener("nyris-custom-prompts-changed", refresh);
+    window.addEventListener("nyris-custom-prompts-changed", onCustom);
+    window.addEventListener("nyris-prompt-versions-changed", onVersions);
     return () => {
       window.removeEventListener("storage", onStorage);
-      window.removeEventListener("nyris-custom-prompts-changed", refresh);
+      window.removeEventListener("nyris-custom-prompts-changed", onCustom);
+      window.removeEventListener("nyris-prompt-versions-changed", onVersions);
     };
   }, [refresh]);
 
@@ -298,19 +312,43 @@ function RequestPromptPage() {
 }
 
 function LibraryCard({ p }) {
+  const versionState = window.getVersionState ? window.getVersionState(p.id, p) : { versions: [], draft: null };
+  const latest =
+    versionState.versions && versionState.versions.length
+      ? versionState.versions.find((v) => v.isLatest) || versionState.versions[versionState.versions.length - 1]
+      : null;
+  const verLabel = latest ? latest.label : p.ver || "v1.0";
+  const hasDraft = !!(versionState.draft && versionState.draft.promptBody);
+  const isCustom = String(p.id).startsWith("custom_");
+
   return (
     <article className="pcard">
       <div className="pcard-catrow">
         <span className="pcard-cat">{p.cat}</span>
-        <span className="pcard-lock">
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4.5V3a2.5 2.5 0 1 1 5 0v1.5M2 4.5h6v4H2z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" /></svg>
-          Read-only
-        </span>
+        {isCustom ? (
+          <StatusBadge status={hasDraft ? "draft" : "published"} size="sm" />
+        ) : (
+          <span className="pcard-lock">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4.5V3a2.5 2.5 0 1 1 5 0v1.5M2 4.5h6v4H2z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" /></svg>
+            Read-only
+          </span>
+        )}
       </div>
       <h3 className="pcard-title">{p.title}</h3>
       <p className="pcard-desc">{p.desc}</p>
       <div className="pcard-meta">
-        <span>Updated {p.date}</span>
+        {window.VersionPill ? (
+          <VersionPill
+            versionLabel={verLabel}
+            isLatest
+            hasDraft={hasDraft}
+            publishState={hasDraft ? "draft" : "published"}
+          />
+        ) : (
+          <span className="ver"><span className="ver-dot" />{verLabel} · latest</span>
+        )}
+        <span className="dotsep" aria-hidden="true" />
+        <span>Updated {latest ? formatPublishedDate(latest.publishedAt) : p.date}</span>
       </div>
       <div className="pcard-actions">
         <button type="button" className="btn btn--primary"
@@ -431,17 +469,20 @@ function DetailPromptEditor({ promptBody }) {
 
 function DetailPage({ id, showImprove, showAction }) {
   const [isImproveOpen, setIsImproveOpen] = React.useState(Boolean(showImprove));
+  const [versionToast, setVersionToast] = React.useState(null);
   const [improveRequest, setImproveRequest] = React.useState(`The image_description field is too vague. Push the AI to include the
 object type, condition, and any visible text or markings. Also, can we
 add a confidence level field to the JSON output?`);
   const isCreatedLayout = isCustomerCreatedRoute(id, showAction);
   const p = usePromptDetailState(id, showAction);
+  const versioning = window.usePromptVersions ? usePromptVersions(id, p) : null;
   const account = PROMPTS_BUILDER_ACCOUNTS.find((a) => a.id === p.accountId);
   const accountLabel = account ? account.label : "MechaTech / mechatech_solutions_testing";
   const templateLabel = (p.templateTitle || "Hybrid Search") + " · " + (p.templateVersion || "v2.4");
+  const versioned = versioning && versioning.selected ? mergePromptWithVersion(p, versioning.selected) : p;
   const customPromptBody = isCreatedLayout ?
-  (p.promptBody || DEMO_CREATED_PROMPT_BODY) :
-  (p.promptBody || buildDetailViewPromptBody());
+  (versioned.promptBody || DEMO_CREATED_PROMPT_BODY) :
+  (versioned.promptBody || buildDetailViewPromptBody());
   const isCustomPrompt = String(p.id).startsWith("custom_") || Boolean(p.isCreatedSample);
   const detailPath = showAction ? "/created/" + p.id : "/detail/" + p.id;
   const closeImproveModal = () => {
@@ -449,12 +490,85 @@ add a confidence level field to the JSON output?`);
     go(detailPath);
   };
 
+  const buildSnapshot = React.useCallback(() => {
+    const base = snapshotFromPrompt(versioned);
+    if (versioning && versioning.isEditing) {
+      return {
+        ...base,
+        title: versioning.editTitle,
+        desc: versioning.editDesc,
+        promptBody: versioning.editBody
+      };
+    }
+    return base;
+  }, [versioned, versioning]);
+
+  const syncStoredPrompt = React.useCallback(
+    (version, snapshot) => {
+      if (!isCustomerCreatedRoute(id, showAction)) return;
+      upsertCustomPrompt({
+        ...p,
+        title: snapshot.title,
+        desc: snapshot.desc,
+        promptBody: snapshot.promptBody,
+        ver: version.label,
+        status: versioning && versioning.hasDraft ? "draft" : "published",
+        date: formatPublishedDate(version.publishedAt)
+      });
+    },
+    [id, showAction, p, versioning]
+  );
+
+  const handlePublish = () => {
+    if (!versioning) return;
+    const snapshot = buildSnapshot();
+    const result = versioning.publish(snapshot);
+    syncStoredPrompt(result.version, {
+      title: result.version.title,
+      desc: result.version.desc,
+      promptBody: result.version.promptBody,
+      metadata: result.version.metadata
+    });
+    setVersionToast("Published " + result.version.label);
+  };
+
+  const handleSaveDraft = () => {
+    if (!versioning) return;
+    const snapshot = buildSnapshot();
+    versioning.saveDraft(snapshot);
+    if (isCustomerCreatedRoute(id, showAction)) {
+      upsertCustomPrompt({ ...p, status: "draft", promptBody: snapshot.promptBody, title: snapshot.title, desc: snapshot.desc });
+    }
+    setVersionToast("Draft saved");
+  };
+
+  const handleRestore = (versionId) => {
+    if (!versioning) return;
+    const result = versioning.restore(versionId);
+    if (result) {
+      syncStoredPrompt(result.version, {
+        title: result.version.title,
+        desc: result.version.desc,
+        promptBody: result.version.promptBody,
+        metadata: result.version.metadata
+      });
+      setVersionToast("Restored as " + result.version.label);
+    }
+  };
+
+  React.useEffect(() => {
+    if (!versionToast) return undefined;
+    const t = setTimeout(() => setVersionToast(null), 2800);
+    return () => clearTimeout(t);
+  }, [versionToast]);
+
   React.useEffect(() => {
     setIsImproveOpen(Boolean(showImprove));
   }, [showImprove, id]);
 
   if (isCreatedLayout) {
     const body = customPromptBody || buildDefaultPromptBodyForCreateModal();
+    const displayStatus = versioning && versioning.hasDraft ? "draft" : "published";
     return (
       <AppShell secondaryNav={<SecondaryNav current="library" />}>
         <button type="button" className="det-back" onClick={() => go("/library")}>
@@ -464,14 +578,14 @@ add a confidence level field to the JSON output?`);
 
         <div className="det-head">
           <div className="det-head-left">
-            <div className="det-cat">{p.cat}</div>
+            <div className="det-cat">{versioned.cat}</div>
             <div className="det-name-row">
-              <h1 className="det-name">{p.title}</h1>
-              <StatusBadge status={p.status || "draft"} />
-              <span className="det-info" title={p.desc}>i</span>
+              <h1 className="det-name">{versioned.title}</h1>
+              <StatusBadge status={displayStatus} />
+              <span className="det-info" title={versioned.desc}>i</span>
             </div>
             <p className="det-account">{accountLabel}</p>
-            <p className="det-created-desc">{p.desc}</p>
+            <p className="det-created-desc">{versioned.desc}</p>
             <div className="det-created-meta">
               <span className="badge">Template</span>
               <span>{templateLabel}</span>
@@ -479,42 +593,67 @@ add a confidence level field to the JSON output?`);
           </div>
         </div>
 
-        <div className="det-bar">
-          <span className="det-ver">
-            Version {p.ver || "v1"} <span className="muted">(latest)</span>
-            <span className="det-ver-dot"></span>
-          </span>
-          <div className="det-bar-actions">
-            <button type="button" className="btn btn--outline btn--pill"
-            onClick={() => go("/improve/" + p.id)}>
-              Improve Prompt with AI
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L8 4.5L11 5.5L8 6.5L7 9.5L6 6.5L3 5.5L6 4.5L7 1.5Z" fill="currentColor"/><path d="M11 9L11.5 10.5L13 11L11.5 11.5L11 13L10.5 11.5L9 11L10.5 10.5L11 9Z" fill="currentColor"/></svg>
-            </button>
-            <button type="button" className="btn btn--outline btn--pill">
-              Test Prompt
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M5 2H2.5C2 2 1.5 2.4 1.5 3V10.5C1.5 11 2 11.5 2.5 11.5H10C10.6 11.5 11 11 11 10.5V8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M8 1.5H11.5V5M11.5 1.5L6.5 6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
+        {versioning && window.PromptVersionBar ? (
+          <PromptVersionBar
+            versioning={versioning}
+            onPublish={handlePublish}
+            onSaveDraft={handleSaveDraft}
+            onRestore={handleRestore}
+            onEditRepublish={() => versioning.setIsEditing(true)}
+            onCancelEdit={() => versioning.setIsEditing(false)}
+          />
+        ) : (
+          <div className="det-bar">
+            <span className="det-ver">
+              Version {versioned.ver || "v1"} <span className="muted">(latest)</span>
+              <span className="det-ver-dot"></span>
+            </span>
           </div>
-        </div>
+        )}
+
+        {versioning && versioning.selected ? (
+          <p className="pv-version-meta">
+            Published {formatPublishedDate(versioning.selected.publishedAt)} by {versioning.selected.publishedBy}
+          </p>
+        ) : null}
 
         <div className="det-section">
-          <div className="codeblock-wrap">
-            <div className="codeblock-actions">
-              <button type="button" className="codeblock-icon" aria-label="Copy prompt">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M8 4.5v12A1.5 1.5 0 009.5 18H18a1.5 1.5 0 001.5-1.5V6A1.5 1.5 0 0018 4.5H8z" stroke="currentColor" strokeWidth="1.5" /><path d="M6 7.5H5A1.5 1.5 0 003.5 9v10.5A1.5 1.5 0 005 21h9a1.5 1.5 0 001.5-1.5V18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
-              </button>
-              <button type="button" className="codeblock-icon" aria-label="Expand prompt">
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M4.5 2H2V4.5M8.5 2H11V4.5M4.5 11H2V8.5M8.5 11H11V8.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </button>
+          {versioning && versioning.isEditing ? (
+            <textarea
+              className="pv-edit-body"
+              value={versioning.editBody}
+              onChange={(e) => versioning.setEditBody(e.target.value)}
+              aria-label="Edit prompt body"
+            />
+          ) : (
+            <div className={"codeblock-wrap" + (versioning && versioning.isReadOnly ? " codeblock-wrap--readonly" : "")}>
+              <div className="codeblock-actions">
+                <button type="button" className="codeblock-icon" aria-label="Copy prompt">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M8 4.5v12A1.5 1.5 0 009.5 18H18a1.5 1.5 0 001.5-1.5V6A1.5 1.5 0 0018 4.5H8z" stroke="currentColor" strokeWidth="1.5" /><path d="M6 7.5H5A1.5 1.5 0 003.5 9v10.5A1.5 1.5 0 005 21h9a1.5 1.5 0 001.5-1.5V18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                </button>
+              </div>
+              <pre className="codeblock-light">{body}</pre>
             </div>
-            <pre className="codeblock-light">{body}</pre>
-          </div>
+          )}
+        </div>
+
+        <div className="det-bar-actions det-bar-actions--secondary">
+          <button type="button" className="btn btn--outline btn--pill"
+          onClick={() => go("/improve/" + p.id)}>
+            Improve Prompt with AI
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L8 4.5L11 5.5L8 6.5L7 9.5L6 6.5L3 5.5L6 4.5L7 1.5Z" fill="currentColor"/><path d="M11 9L11.5 10.5L13 11L11.5 11.5L11 13L10.5 11.5L9 11L10.5 10.5L11 9Z" fill="currentColor"/></svg>
+          </button>
+          <button type="button" className="btn btn--outline btn--pill">
+            Test Prompt
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M5 2H2.5C2 2 1.5 2.4 1.5 3V10.5C1.5 11 2 11.5 2.5 11.5H10C10.6 11.5 11 11 11 10.5V8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M8 1.5H11.5V5M11.5 1.5L6.5 6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
         </div>
 
         <div className="det-footer">
-          <button type="button" className="btn btn--dark btn--bar" onClick={() => go("/library")}>Discard</button>
-          <button type="button" className="btn btn--primary btn--bar">Push to Index</button>
+          <button type="button" className="btn btn--dark btn--bar" onClick={() => go("/library")}>Back to library</button>
         </div>
+
+        {versionToast ? <div className="pv-toast" role="status">{versionToast}</div> : null}
 
         {isImproveOpen &&
         <div className="improve-scrim">
@@ -571,11 +710,12 @@ add a confidence level field to the JSON output?`);
 
       <div className="det-head">
         <div className="det-head-left">
-          <div className="det-cat">{p.cat}</div>
+          <div className="det-cat">{versioned.cat}</div>
           <div className="det-name-row">
-            <h1 className="det-name">{p.title}</h1>
+            <h1 className="det-name">{versioned.title}</h1>
+            {versioning && versioning.hasDraft ? <StatusBadge status="draft" size="sm" /> : null}
           </div>
-          <p className="det-account">{p.desc}</p>
+          <p className="det-account">{versioned.desc}</p>
         </div>
         <div className="det-actions">
           <button type="button" className="btn btn--primary"
@@ -583,13 +723,30 @@ add a confidence level field to the JSON output?`);
         </div>
       </div>
 
-      <div className="det-bar">
-        <div className="det-bar-meta">
-          <span className="item">Updated {p.date}</span>
-          <span className="sep"></span>
-          <span className="item">Read-only reference</span>
+      {versioning && window.PromptVersionBar ? (
+        <PromptVersionBar
+          versioning={versioning}
+          onPublish={handlePublish}
+          onSaveDraft={handleSaveDraft}
+          onRestore={handleRestore}
+          onEditRepublish={() => versioning.setIsEditing(true)}
+          onCancelEdit={() => versioning.setIsEditing(false)}
+        />
+      ) : (
+        <div className="det-bar">
+          <div className="det-bar-meta">
+            <span className="item">Updated {versioned.date}</span>
+            <span className="sep"></span>
+            <span className="item">Read-only reference</span>
+          </div>
         </div>
-      </div>
+      )}
+
+      {versioning && versioning.selected ? (
+        <p className="pv-version-meta">
+          Published {formatPublishedDate(versioning.selected.publishedAt)} by {versioning.selected.publishedBy}
+        </p>
+      ) : null}
 
       <div className="det-meta-grid">
         {detailCards.map((card) =>
@@ -603,10 +760,24 @@ add a confidence level field to the JSON output?`);
       <div className="det-section">
         <div className="det-section-head">
           <span className="det-section-title">Prompt body</span>
-          <span className="det-section-hint">Read-only reference. Use Create Customer Prompt to add customer context, terminology, and examples.</span>
+          <span className="det-section-hint">
+            {versioning && versioning.isReadOnly
+              ? "Viewing a previous version (read-only). Restore or edit and republish to promote changes."
+              : "Use version history to browse past releases. Save as draft while tuning, then Publish."}
+          </span>
         </div>
-        <DetailPromptEditor promptBody={customPromptBody} />
+        {versioning && versioning.isEditing ? (
+          <textarea
+            className="pv-edit-body"
+            value={versioning.editBody}
+            onChange={(e) => versioning.setEditBody(e.target.value)}
+            aria-label="Edit prompt body"
+          />
+        ) : (
+          <DetailPromptEditor promptBody={customPromptBody} />
+        )}
       </div>
+      {versionToast ? <div className="pv-toast" role="status">{versionToast}</div> : null}
     </AppShell>);
 
 }

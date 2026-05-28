@@ -634,8 +634,81 @@ function RequestResultThumb({ item, isCorrect, onMark }) {
   );
 }
 
-function RequestRow({ request, marking, onOpen }) {
+function RequestRowResultThumb({ item, isCorrect, isSelected, onSelect }) {
+  if (!item.imageUrl) {
+    return (
+      <div
+        className={
+          "req-thumb req-thumb--list req-thumb--missing" +
+          (isCorrect ? " req-thumb--correct" : "")
+        }
+        title="No image"
+      >
+        <IconBrokenImage />
+        {isCorrect ? (
+          <span className="req-correct-badge req-correct-badge--sm">
+            <IconCheckFilled />
+          </span>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={
+        "req-row-result-thumb" +
+        (isSelected && !isCorrect ? " is-selected" : "") +
+        (isCorrect ? " is-correct" : "")
+      }
+      onClick={() => onSelect(item)}
+      aria-label={"Select result " + item.sku}
+      aria-pressed={isSelected || isCorrect}
+      disabled={isCorrect}
+    >
+      <span className="req-thumb req-thumb--list">
+        <img src={item.imageUrl} alt="" loading="lazy" />
+        {isCorrect ? (
+          <span className="req-correct-badge req-correct-badge--sm">
+            <IconCheckFilled />
+          </span>
+        ) : null}
+      </span>
+    </button>
+  );
+}
+
+function RequestRow({ request, marking, onOpen, onMarkingChange }) {
+  const [selectedItemId, setSelectedItemId] = React.useState(null);
   const isMarked = !!marking;
+  const cropData = getCrop(request.id);
+
+  const isResultCorrect = (item) =>
+    marking && marking.source !== "search" && marking.correct_item_id === item.id;
+
+  const handleSelect = (item) => {
+    if (!item.imageUrl || isResultCorrect(item)) return;
+    setSelectedItemId((prev) => (prev === item.id ? null : item.id));
+  };
+
+  const handleMark = (item) => {
+    setMarking(
+      request.id,
+      buildMarkPayload(request, item, cropData, {
+        source: "result",
+        result_index: request.results.findIndex((r) => r.id === item.id)
+      })
+    );
+    setSelectedItemId(null);
+    if (onMarkingChange) onMarkingChange();
+  };
+
+  const selectedItem =
+    selectedItemId != null
+      ? request.results.find((r) => r.id === selectedItemId) || null
+      : null;
+
   return (
     <article className={"req-row" + (isMarked ? " req-row--marked" : "")}>
       {isMarked ? (
@@ -686,18 +759,43 @@ function RequestRow({ request, marking, onOpen }) {
             </button>
           </div>
         </div>
-        <div className="req-row-results req-row-results--compact">
-          {request.results.slice(0, 10).map((item, i) =>
-            item.imageUrl ? (
-              <div className="req-thumb req-thumb--list" key={request.id + "-t-" + i}>
-                <img src={item.imageUrl} alt="" loading="lazy" />
+        <div className="req-row-results-block">
+          <div className="req-row-results req-row-results--compact">
+            {request.results.slice(0, 10).map((item) => (
+              <RequestRowResultThumb
+                key={item.id}
+                item={item}
+                isCorrect={isResultCorrect(item)}
+                isSelected={selectedItemId === item.id}
+                onSelect={handleSelect}
+              />
+            ))}
+          </div>
+          {selectedItem && !isResultCorrect(selectedItem) ? (
+            <div className="req-row-mark-bar" role="region" aria-label="Mark correct result">
+              <span className="req-row-mark-bar-preview">
+                <img src={selectedItem.imageUrl} alt="" />
+              </span>
+              <span className="req-row-mark-bar-label">Mark as correct?</span>
+              <div className="req-row-mark-bar-actions">
+                <button
+                  type="button"
+                  className="req-row-mark-cancel"
+                  onClick={() => setSelectedItemId(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="req-row-mark-confirm"
+                  onClick={() => handleMark(selectedItem)}
+                >
+                  <IconCheck />
+                  Mark correct
+                </button>
               </div>
-            ) : (
-              <div className="req-thumb req-thumb--missing req-thumb--list" key={request.id + "-t-" + i}>
-                <IconBrokenImage />
-              </div>
-            )
-          )}
+            </div>
+          ) : null}
         </div>
       </div>
     </article>
@@ -1178,6 +1276,7 @@ function RequestsListPage() {
                   request={req}
                   marking={markings[req.id]}
                   onOpen={(id) => window.go("/requests/" + id)}
+                  onMarkingChange={refreshMarkings}
                 />
               ))
             )}
