@@ -32,7 +32,7 @@
       if (/requests-crop\.html/i.test(location.pathname)) return;
       if (/\/requests\/crop\//i.test(location.pathname)) return;
       var crop = hash.match(/^#\/requests\/crop\/([^/?#]+)/);
-      if (crop) {
+      if (crop && /\.vercel\.app$/i.test(location.hostname)) {
         location.replace("/requests/crop/" + encodeURIComponent(crop[1]));
       }
     })();

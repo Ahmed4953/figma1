@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <base href="/" />
+  <title>Requests — crop and assign · nyris Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Dedicated crop-and-assign page (Builder.io + local dev)" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Fira+Sans:wght@600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="prompts-screens.css" />
+  <link rel="stylesheet" href="prompt-app.css" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+  <style>
+    html, body { margin: 0; padding: 0; background: rgb(221, 222, 231); min-height: 100vh; }
+    #root { display: flex; min-height: 100vh; }
+    #root > .pl { width: 100%; }
+    .pl-menu, .pl-bar { background: rgb(30, 31, 49) !important; }
+    .pl-sidebar {
+      background: linear-gradient(180deg, rgb(43, 44, 70) 17%, rgb(113, 20, 230) 100%) !important;
+    }
+    .pl-nav { color: rgb(255, 255, 255) !important; }
+    .pl-nav.is-active { background: rgba(255, 255, 255, 0.14) !important; }
+    .pl-divider { color: rgb(151, 69, 255) !important; }
+    .pl-email { color: rgb(255, 255, 255) !important; }
+    .nyris-prerender .req-crop-box--static {
+      left: 18%;
+      top: 22%;
+      width: 52%;
+      height: 56%;
+    }
+  </style>
+  <script>
+    (function () {
+      window.__NYRIS_SHOW_PRERENDER__ = true;
+      window.__NYRIS_OPEN_CROP_MODAL__ = true;
+      window.REQUEST_CROP_USE_CLEAN_URL = true;
+      var wantHash = "#/requests/crop/req-demo-1";
+      if (location.hash !== wantHash) location.hash = wantHash;
+    })();
+  </script>
+</head>
+<body>
+  <div id="root">
+    <div id="nyris-prerender" class="pl nyris-prerender">
+      <header class="pl-header">
+        <div class="pl-menu" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 4L14 14M14 4L4 14" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <div class="pl-bar">
+          <div class="pl-left">
+            <img class="pl-logo" src="assets/PORTAL.svg" alt="PORTAL" />
+            <div class="pl-search"><span class="label">All accounts</span></div>
+          </div>
+          <div class="pl-right">
+            <span class="pl-email">test@nyris.io</span>
+            <div class="pl-avatar">T</div>
+          </div>
+        </div>
+      </header>
+      <div class="pl-shell">
+        <div class="pl-sidebar-wrap">
+          <aside class="pl-sidebar">
+            <div class="pl-nav-group">
+              <div class="pl-nav"><img src="assets/icon-dashboard.svg" alt="" />Dashboard</div>
+              <div class="pl-divider">Admin Hub</div>
+              <div class="pl-nav"><img src="assets/icon-accounts.svg" alt="" />Accounts</div>
+              <div class="pl-nav"><img src="assets/icon-indexes.svg" alt="" />Indexes</div>
+              <div class="pl-nav"><img src="assets/icon-prompts.svg" alt="" />Prompts</div>
+              <div class="pl-divider">Catalogue</div>
+              <div class="pl-nav is-active"><img src="assets/icon-requests.svg" alt="" />Requests</div>
+              <div class="pl-nav"><img src="assets/icon-items.svg" alt="" />Items</div>
+            </div>
+            <div class="pl-foot"><img src="assets/poweredby-nyris.svg" alt="Powered by nyris" /></div>
+          </aside>
+        </div>
+        <main class="pl-content">
+          <div class="pl-panel pl-panel--requests">
+            <div class="req-page req-page--detail">
+              <p class="det-back">← Back to requests</p>
+              <div class="req-detail-head">
+                <h1 class="req-title">Request details</h1>
+                <span class="req-detail-id">req-demo-1</span>
+              </div>
+              <div class="req-list-card req-detail-card">
+                <div class="req-detail-summary">
+                  <div class="req-image-panel">
+                    <figure class="req-image-figure">
+                      <figcaption class="req-image-label">Original</figcaption>
+                      <div class="req-image-frame">
+                        <img src="assets/requests/query-coupling.jpg" alt="Original request" />
+                      </div>
+                    </figure>
+                  </div>
+                  <div class="req-image-actions">
+                    <button type="button" class="req-btn req-btn--crop">Crop Image</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      <div class="req-modal-scrim" aria-hidden="true">
+        <div class="modal req-crop-modal">
+          <div class="modal-head">
+            <div>
+              <h2 class="modal-title">Crop and assign</h2>
+              <p class="modal-sub">Adjust the area to use for assignment. The original request image is not changed.</p>
+            </div>
+            <button type="button" class="modal-close" aria-label="Close">×</button>
+          </div>
+          <div class="req-crop-viewport">
+            <img src="assets/requests/query-coupling.jpg" alt="" class="req-crop-image" />
+            <div class="req-crop-box req-crop-box--static">
+              <span class="req-crop-handle req-crop-handle--nw"></span>
+              <span class="req-crop-handle req-crop-handle--ne"></span>
+              <span class="req-crop-handle req-crop-handle--sw"></span>
+              <span class="req-crop-handle req-crop-handle--se"></span>
+            </div>
+          </div>
+          <div class="modal-foot">
+            <button type="button" class="btn btn--outline">Cancel</button>
+            <button type="button" class="btn btn--primary">Save crop</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/babel" src="portal-chrome.jsx"></script>
+  <script type="text/babel" src="prompt-app-core.jsx"></script>
+  <script type="text/babel" src="prompt-versioning.jsx"></script>
+  <script type="text/babel" src="prompt-app-screens.jsx"></script>
+  <script type="text/babel" src="requests-screens.jsx"></script>
+  <script type="text/babel" src="prompt-app-wizard.jsx"></script>
+  <script type="text/babel" src="prompt-app-features.jsx"></script>
+  <script type="text/babel" data-presets="react">
+    function bootRequestsCrop() {
+      if (!window.PromptApp || !window.RequestsPage) {
+        requestAnimationFrame(bootRequestsCrop);
+        return;
+      }
+      ReactDOM.createRoot(document.getElementById("root")).render(
+        React.createElement(window.PromptApp)
+      );
+    }
+    bootRequestsCrop();
+  </script>
+</body>
+</html>

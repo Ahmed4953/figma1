@@ -7,6 +7,10 @@
     {
       "source": "/requests/crop/:requestId",
       "destination": "/requests-crop.html"
+    },
+    {
+      "source": "/requests/crop/:requestId/",
+      "destination": "/requests-crop.html"
     }
   ],
   "headers": [

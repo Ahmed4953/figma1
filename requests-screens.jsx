@@ -814,10 +814,15 @@ function cropPageUrl(requestId) {
     if (custom.includes("#")) return custom;
     return custom + "#" + cropHashPath(requestId);
   }
-  if (window.REQUEST_CROP_USE_CLEAN_URL !== false) {
+  const hash = cropHashPath(requestId);
+  const useClean =
+    window.REQUEST_CROP_USE_CLEAN_URL !== false &&
+    (/\.vercel\.app$/i.test(window.location.hostname) ||
+      requestId === CROP_CAPTURE_REQUEST_ID);
+  if (useClean) {
     return "/requests/crop/" + encodeURIComponent(requestId);
   }
-  return "requests-crop.html#" + cropHashPath(requestId);
+  return "requests-crop.html#" + hash;
 }
 
 function cropPageAbsoluteUrl(requestId) {
