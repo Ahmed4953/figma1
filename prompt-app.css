@@ -2158,18 +2158,30 @@
   color: rgb(200, 60, 60);
   background: rgb(255, 244, 244);
 }
-.req-qa-workflow {
-  padding: 20px 22px;
+.req-crop-assign {
+  padding: 0 22px 20px;
   border-bottom: 1px solid var(--divider);
 }
-.req-qa-workflow-intro {
-  margin: 0 0 16px 0;
+.req-crop-assign-head {
+  padding: 20px 0 12px;
+}
+.req-crop-assign-title {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-1);
+}
+.req-crop-assign-intro {
+  margin: 0;
   font-size: 13px;
   line-height: 1.5;
   color: var(--text-3);
   max-width: 720px;
 }
-.req-qa-steps {
+.req-crop-assign .req-image-panel {
+  margin-bottom: 16px;
+}
+.req-crop-assign-steps {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -2177,7 +2189,7 @@
   flex-direction: column;
   gap: 14px;
 }
-.req-qa-step {
+.req-crop-assign-step {
   display: flex;
   gap: 14px;
   align-items: flex-start;
@@ -2186,11 +2198,11 @@
   border: 1px solid var(--divider);
   background: var(--card-inner);
 }
-.req-qa-step--done {
+.req-crop-assign-step.is-done {
   border-color: rgb(189, 232, 204);
   background: rgb(248, 252, 249);
 }
-.req-qa-step-num {
+.req-crop-assign-step-num {
   flex: 0 0 28px;
   width: 28px;
   height: 28px;
@@ -2204,20 +2216,20 @@
   font-weight: 700;
   color: var(--text-2);
 }
-.req-qa-step--done .req-qa-step-num {
+.req-crop-assign-step.is-done .req-crop-assign-step-num {
   background: rgb(225, 246, 232);
   border-color: rgb(0, 192, 112);
   color: rgb(0, 110, 72);
 }
-.req-qa-step-body {
+.req-crop-assign-step-body {
   flex: 1;
   min-width: 0;
 }
-.req-qa-step-body strong {
+.req-crop-assign-step-body strong {
   font-size: 14px;
   color: var(--text-1);
 }
-.req-qa-step-tag {
+.req-crop-assign-step-tag {
   margin-left: 8px;
   font-size: 11px;
   font-weight: 700;
@@ -2225,19 +2237,41 @@
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
-.req-qa-step-body p {
+.req-crop-assign-step-body p {
   margin: 6px 0 10px 0;
   font-size: 13px;
   line-height: 1.45;
   color: var(--text-3);
 }
-.req-qa-step-done-label {
+.req-crop-assign-step-done {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 13px;
   font-weight: 600;
   color: rgb(0, 110, 72);
+}
+.req-detail-meta--top {
+  padding: 16px 22px 0;
+}
+.req-row-mark-bar-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.req-row-mark-bar-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-3);
+  line-height: 1.35;
+}
+.req-page-lead {
+  margin: 4px 0 16px 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text-3);
+  max-width: 640px;
 }
 .req-crop-away-hint--inline {
   flex: 1 1 100%;
