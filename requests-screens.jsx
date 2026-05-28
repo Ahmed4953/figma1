@@ -612,7 +612,29 @@ function isMarkCorrectCaptureActive() {
   return !!window.__NYRIS_OPEN_MARK_CORRECT__;
 }
 
+function readMarkCorrectFromHash() {
+  const parts = (window.location.hash || "").replace(/^#/, "").split("/").filter(Boolean);
+  if (parts[0] !== "requests" || parts[1] !== "mark-correct") return null;
+  return {
+    requestId: parts[2] || null,
+    resultId: parts[3] || null
+  };
+}
+
+function markCorrectHashPath(requestId, resultId) {
+  return "/requests/mark-correct/" + requestId + "/" + resultId;
+}
+
+function markCorrectPageUrl(requestId, resultId) {
+  const base = window.MARK_CORRECT_CAPTURE_URL || "requests-mark-correct.html";
+  return base + "#" + markCorrectHashPath(requestId, resultId);
+}
+
 function readMarkCorrectCaptureSelection(request) {
+  const fromHash = readMarkCorrectFromHash();
+  if (fromHash && fromHash.requestId === request.id && fromHash.resultId) {
+    return fromHash.resultId;
+  }
   if (!isMarkCorrectCaptureActive()) return null;
   const reqId = window.__NYRIS_MARK_CORRECT_REQUEST_ID__ || MARK_CORRECT_CAPTURE_REQUEST_ID;
   if (request.id !== reqId) return null;
@@ -622,6 +644,16 @@ function readMarkCorrectCaptureSelection(request) {
       : MARK_CORRECT_CAPTURE_RESULT_INDEX;
   const item = request.results[idx];
   return item && item.id ? item.id : null;
+}
+
+function useMarkCorrectTarget() {
+  const [target, setTarget] = React.useState(() => readMarkCorrectFromHash());
+  React.useEffect(() => {
+    const sync = () => setTarget(readMarkCorrectFromHash());
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, []);
+  return target;
 }
 
 function RequestResultThumb({ item, isCorrect, onMark }) {
@@ -698,12 +730,23 @@ function RequestRowResultThumb({ item, isCorrect, isSelected, onSelect }) {
   );
 }
 
-function RequestRow({ request, marking, onOpen, onMarkingChange }) {
+function RequestRow({ request, marking, onOpen, onMarkingChange, markCorrectTarget }) {
+  const selectedFromUrl =
+    markCorrectTarget &&
+    markCorrectTarget.requestId === request.id &&
+    markCorrectTarget.resultId
+      ? markCorrectTarget.resultId
+      : null;
+
   const [selectedItemId, setSelectedItemId] = React.useState(() =>
     readMarkCorrectCaptureSelection(request)
   );
   const isMarked = !!marking;
   const cropData = getCrop(request.id);
+
+  React.useEffect(() => {
+    setSelectedItemId(selectedFromUrl);
+  }, [selectedFromUrl]);
 
   const isResultCorrect = (item) =>
     marking && marking.source !== "search" && marking.correct_item_id === item.id;
@@ -712,8 +755,11 @@ function RequestRow({ request, marking, onOpen, onMarkingChange }) {
     if (!item.imageUrl || isResultCorrect(item)) return;
     const nextId = selectedItemId === item.id ? null : item.id;
     setSelectedItemId(nextId);
-    if (nextId && typeof window.go === "function") {
-      window.go("/requests/mark-correct");
+    if (typeof window.go !== "function") return;
+    if (nextId) {
+      window.go(markCorrectHashPath(request.id, nextId));
+    } else {
+      window.go("/requests");
     }
   };
 
@@ -1146,6 +1192,7 @@ function RequestDetailPage({ requestId }) {
 }
 
 function RequestsListPage({ captureMarkCorrect }) {
+  const markCorrectTarget = useMarkCorrectTarget();
   const [activeFilter, setActiveFilter] = React.useState(null);
   const [showMarkedOnly, setShowMarkedOnly] = React.useState(false);
   const [search, setSearch] = React.useState("");
@@ -1312,6 +1359,7 @@ function RequestsListPage({ captureMarkCorrect }) {
                   key={req.id}
                   request={req}
                   marking={markings[req.id]}
+                  markCorrectTarget={markCorrectTarget}
                   onOpen={(id) => window.go("/requests/" + id)}
                   onMarkingChange={refreshMarkings}
                 />
@@ -1352,8 +1400,9 @@ function RequestsListPage({ captureMarkCorrect }) {
 
 function RequestsPage() {
   const route = window.useRoute ? window.useRoute() : { route: "requests", arg: null };
+  const markFromHash = readMarkCorrectFromHash();
   const captureMarkCorrect =
-    route.arg === "mark-correct" || isMarkCorrectCaptureActive();
+    !!markFromHash || route.arg === "mark-correct" || isMarkCorrectCaptureActive();
   if (route.arg && route.route === "requests" && !captureMarkCorrect) {
     return <RequestDetailPage requestId={route.arg} />;
   }
@@ -1362,7 +1411,10 @@ function RequestsPage() {
 
 window.RequestsPage = RequestsPage;
 window.MARK_CORRECT_CAPTURE_URL = "requests-mark-correct.html";
-window.MARK_CORRECT_CAPTURE_HASH = "#/requests/mark-correct";
+window.MARK_CORRECT_CAPTURE_HASH =
+  "#/requests/mark-correct/" + MARK_CORRECT_CAPTURE_REQUEST_ID + "/MT-CPL-002";
+window.readMarkCorrectFromHash = readMarkCorrectFromHash;
+window.markCorrectPageUrl = markCorrectPageUrl;
 window.REQUEST_MARKINGS_KEY = MARKINGS_KEY;
 window.REQUEST_CROPS_KEY = CROPS_KEY;
 window.loadRequestMarkings = loadMarkings;
